@@ -1,0 +1,11 @@
+{"cmd":"Init"}
+{"cmd":"Init"}
+{"M_grad_max":50,"M_max":400.0,"M_min":-50.0,"cmd":"SendLimits","n_max":1000}
+{"En_Is":true,"GearCtrl":2,"Kl_15":false,"MotorCtrl":1,"ReqState":1,"cmd":"SendControl"}
+{"En_Is":true,"Isd":-0.5,"Isq":0.0,"cmd":"SendTorque"}
+{"cmd":"Init"}
+{"M_grad_max":50,"M_max":400.0,"M_min":-50.0,"cmd":"SendLimits","n_max":1000}
+{"En_Is":true,"GearCtrl":2,"Kl_15":false,"MotorCtrl":1,"ReqState":1,"cmd":"SendControl"}
+{"En_Is":true,"Isd":-0.5,"Isq":0.0,"cmd":"SendTorque"}
+{"M_grad_max":50,"M_max":400.0,"M_min":-50.0,"cmd":"SendLimits","n_max":1000}
+{"En_Is":false,"GearCtrl":4,"Kl_15":true,"MotorCtrl":1,"Ms":0.0,"ReqState":1,"cmd":"SendControl"}

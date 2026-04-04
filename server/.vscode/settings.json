@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "regex": "cpp",
+        "xlocale": "cpp",
+        "xstring": "cpp",
+        "array": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "vector": "cpp",
+        "xutility": "cpp",
+        "future": "cpp",
+        "system_error": "cpp",
+        "algorithm": "cpp",
+        "charconv": "cpp",
+        "ios": "cpp",
+        "istream": "cpp",
+        "scoped_allocator": "cpp"
+    }
+}

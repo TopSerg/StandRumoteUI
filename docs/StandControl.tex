@@ -1,0 +1,165 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{datetime}
+\geometry{a4paper, margin=2.5cm}
+\titleformat{\section}{\large\bfseries}{\thesection.}{1em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Инструкция пользователя}
+\rhead{\today}
+\cfoot{\thepage}
+
+\begin{document}
+
+\begin{center}
+    \LARGE\textbf{Руководство пользователя приложения StandControl} \\
+    \large Версия: 25.12.2025
+\end{center}
+
+\section{Назначение}
+
+Программа StandControl предназначена для удалённого управления и мониторинга инвертора электропривода на стенде испытаний. Приложение обеспечивает задание режимов управления, передачу команд по CAN-шине, приём и отображение телеметрии в реальном времени, ведение журнала измерений, построение трендов и карт параметров электродвигателя.
+
+Архитектура системы клиент--серверная. Клиентское приложение предоставляет графический интерфейс пользователя, серверная часть осуществляет обмен с инвертором по CAN и ретрансляцию данных клиенту.
+
+\section{Порядок работы}
+
+\subsection*{1. Запуск и подключение}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Запустите серверную часть StandControl Server на компьютере, подключённом к инвертору по CAN.
+    \item Запустите клиентское приложение StandControl GUI на устройстве, находящемся в одной локальной сети с первым.
+    \item При успешном подключении индикатор соединения в верхней панели изменит цвет на зелёный.
+\end{itemize}
+
+\subsection*{2. Выбор режима управления}
+
+Доступны 3 режима управления электроприводом:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Currents (Id/Iq)} — управление по токам статора в $dq$-координатах.
+    \item \textbf{Frequency (ns)} — управление по частоте вращения (обороты).
+    \item \textbf{Torque (Ms)} — управление по моменту.
+\end{itemize}
+
+Выбор режима осуществляется в блоке \textbf{Control mode}. После изменения режима необходимо нажать кнопку \textbf{Отправить} или \textbf{Применить режим}.
+
+\subsection*{3. Выбор передачи}
+
+В блоке \textbf{Gear (D/R/N)} задаётся передача:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{D} — движение вперёд;
+    \item \textbf{R} — реверс;
+    \item \textbf{N} — нейтраль.
+\end{itemize}
+
+Выбранное значение передаётся на сервер немедленно.
+
+\subsection*{4. Задание управляющих параметров}
+
+\textbf{Режим Currents (Id/Iq):}
+\begin{itemize}[leftmargin=1.5em]
+    \item Введите значения \textbf{Id} и \textbf{Iq} (А) вручную или с помощью ползунков.
+    \item Нажмите \textbf{SendTorque (Id/Iq)} или \textbf{Отправить}.
+\end{itemize}
+
+\textbf{Режим Frequency (ns):}
+\begin{itemize}[leftmargin=1.5em]
+    \item Задайте требуемую частоту вращения (rpm).
+    \item Нажмите \textbf{Отправить}.
+\end{itemize}
+
+\subsection*{5. Установка ограничений}
+
+В блоке \textbf{Limits} задаются:
+\begin{itemize}[leftmargin=1.5em]
+    \item минимальный и максимальный момент (\textbf{M\_min}, \textbf{M\_max});
+    \item максимальный градиент момента (\textbf{M\_grad\_max});
+    \item максимальная скорость вращения (\textbf{n\_max}).
+\end{itemize}
+
+Для передачи ограничений нажмите кнопку \textbf{SendLimits}.
+
+\subsection*{6. Запуск и останов}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Start} — инициализация и перевод системы в рабочее состояние.
+    \item \textbf{Stop} — останов управления.
+    \item \textbf{Reset} — сброс состояния и повторное чтение параметров.
+    \item \textbf{Save} — сохранение текущей конфигурации (если поддерживается сервером).
+\end{itemize}
+
+\section{Индикация и телеметрия}
+
+Во вкладке \textbf{Indication} отображаются основные параметры:
+\begin{itemize}[leftmargin=1.5em]
+    \item скорость вращения;
+    \item момент;
+    \item токи и напряжения в $dq$-осях;
+    \item температуры и дополнительные параметры MCU/VCU (при наличии).
+\end{itemize}
+
+В разделе \textbf{Tx / Rx CAN} отображаются последние переданные и принятые CAN-кадры.
+
+\section{Журнал и экспорт данных}
+
+Во вкладке \textbf{Logbook} ведётся журнал телеметрии:
+\begin{itemize}[leftmargin=1.5em]
+    \item каждая строка содержит временную метку и набор измеренных параметров;
+    \item журнал можно очистить кнопкой \textbf{Clear};
+    \item данные экспортируются в CSV кнопкой \textbf{Export CSV}.
+\end{itemize}
+
+В нижней части вкладки отображается текстовый лог событий.
+
+\section{Тренды и карты}
+
+\subsection*{Тренды}
+
+Во вкладке \textbf{Trends} в реальном времени строятся графики:
+\begin{itemize}[leftmargin=1.5em]
+    \item скорость вращения;
+    \item момент;
+    \item токи и напряжения;
+    \item дополнительные параметры электропривода.
+\end{itemize}
+
+Графики автоматически масштабируются по времени и амплитуде.
+
+\subsection*{Карты}
+
+Во вкладке \textbf{Maps} отображаются:
+\begin{itemize}[leftmargin=1.5em]
+    \item зависимости \textbf{Ld(Id)} и \textbf{Lq(Iq)}, вычисляемые онлайн;
+    \item карты \textbf{момент / мощность – обороты}.
+\end{itemize}
+
+Данные накапливаются по мере поступления телеметрии.
+
+\section{Замечания}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item При отсутствии связи с сервером управление блокируется.
+    \item Изменения параметров не передаются автоматически — требуется нажатие кнопки \textbf{Отправить}.
+    \item Для корректной работы требуется установленный драйвер CAN-интерфейса.
+\end{itemize}
+
+\vspace{2em}
+\hrule
+\vspace{1em}
+\hrule
+\vspace{1em}
+\begin{center}
+    \textbf{Контакты} \\[0.5em]
+    Маков Сергей Константинович \\[0.5em]
+    Email: \href{mailto:makov@amtc.org}{\texttt{makov@amtc.org}} \\[0.3em]
+    Telegram: \href{https://t.me/TopSerg}{\texttt{@TopSerg}} \\[0.3em]
+
+\end{center}
+
+\end{document}
