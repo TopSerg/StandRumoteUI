@@ -387,7 +387,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     # MCU Flux Parameters
     flux_frame = ttk.LabelFrame(main_inner, text="MCU Flux Parameters")
     flux_frame.grid(row=4, column=2, padx=(0,10), pady=10, sticky="nsew")
-    for i, param in enumerate(["Emf", "Welectrical", "motorRs", "Wmechanical"]):
+    for i, param in enumerate(["Flux", "Theta", "Temperature"]):
         ttk.Label(flux_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
         var = state.entry_vars.get(param) or tk.StringVar(master=root)
         state.entry_vars[param] = var

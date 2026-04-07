@@ -98,6 +98,12 @@ class Telemetry:
                 "Uq",
                 "Id",
                 "Iq",
+                "Flux",
+                "Theta",
+                "Temperature",
+                "ZVFlux",
+                "ZVTheta",
+                "ZVTemperature",
                 "Emf",
                 "Welectrical",
                 "Wmechanical",
@@ -245,10 +251,9 @@ class Telemetry:
             put("Stator current d (Isd)", Isd)
             put("Torque (Ms)", Ms)
             put("Speed rotation", ns)
-            put("Emf", Emf)
-            put("Welectrical", We)
-            put("Wmechanical", Wm)
-            put("motorRs", Rs)
+            put("Flux", Flux)
+            put("Theta", Theta)
+            put("Temperature", Temperature)
             put("IGBT temperature", igbt)
             put("Stator temperature", stator)
 
