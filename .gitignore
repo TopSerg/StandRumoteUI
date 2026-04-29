@@ -7,8 +7,6 @@
 /client/__pycache__/
 /server/__pycache__/
 /server/build/
-/server/out/
-/server/dist/
 /server/build/CMakeFiles/
 /server/build/MarathonWS.dir/
 /server/build/Stand_Marathon/
@@ -18,38 +16,3 @@
 /client/build/
 /client/dist/
 /bundle_out/
-
-# common C/C++ and Python build byproducts
-*.obj
-*.o
-*.pdb
-*.idb
-*.ilk
-*.exp
-*.iobj
-*.ipdb
-*.pyc
-*.pyo
-
-# generated logs/exports
-*.log
-logbook_*.csv
-ws_can_log.jsonl
-
-# archives and heavy package files
-*.zip
-*.7z
-*.rar
-*.tar
-*.tar.gz
-*.tgz
-*.tar.bz2
-*.tbz2
-*.xz
-*.iso
-
-# local vcpkg build cache/output (very large)
-/server/vcpkg/downloads/
-/server/vcpkg/buildtrees/
-/server/vcpkg/packages/
-/server/vcpkg/installed/
