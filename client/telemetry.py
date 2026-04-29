@@ -104,9 +104,15 @@ class Telemetry:
                 "ZVFlux",
                 "ZVTheta",
                 "ZVTemperature",
+                "ZVRs",
+                "ZVTimeStamp",
+                "ZVThetaCorr",
                 "Emf",
                 "Welectrical",
                 "Wmechanical",
+                "Rs",
+                "TimeStamp",
+                "ThetaCorr",
             }:
                 self._handle_model_data(data)
                 return
@@ -276,6 +282,9 @@ class Telemetry:
                 "Welectrical": We,
                 "motorRs": Rs,
                 "Wmechanical": Wm,
+                "Rs": Rs,
+                "TimeStamp": TimeStamp,
+                "ThetaCorr": ThetaCorr,
             }
         )
 

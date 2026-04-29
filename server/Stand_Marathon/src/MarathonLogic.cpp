@@ -89,7 +89,7 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
 
         case 0x7c: { // MCU_Temperature2 (BO_ 124)
             data.MCU_TempCurrCool = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 7, 8)) - 50;
-            data.MCU_TempCurrStr  = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
+            data.MCU_TempCurrStr  = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
 
             std::cout << "[RX] Stator Temp=" << (int)data.MCU_TempCurrStr
                       << " Coolant=" << (int)data.MCU_TempCurrCool << std::endl;
@@ -119,19 +119,47 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             break;
         }
 
-        case 0x7f: { // MCU_FluxParams (BO_ 127) - new DBC
-            const uint16_t rawZVFlux  = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
-            const uint16_t rawZVTheta = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16));
-            const uint16_t ZVTemperature = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 31, 16));
-
-            data.ZVFlux = static_cast<float>(rawZVFlux) * 0.0001f;
-            data.ZVTheta = static_cast<float>(rawZVTheta) * 0.0001f;
-            data.ZVTemperature = static_cast<float>(ZVTemperature) * 0.01f;
-
+        case 0x7f: { // MCU_Theta (BO_ 127)
+            const uint16_t rawZVTimeStamp  =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
+        
+            const uint16_t rawZVTheta =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16));
+        
+            const uint16_t rawZVThetaCorr =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16));
+        
+            data.ZVTimeStamp = rawZVTimeStamp;
+            data.ZVTheta     = static_cast<float>(rawZVTheta) * 0.0001f;
+            data.ZVThetaCorr = static_cast<float>(rawZVThetaCorr) * 0.0001f;
+        
+            std::cout << "[RX] Theta: "
+                      << "TimeStamp=" << data.ZVTimeStamp
+                      << " ZVTheta=" << data.ZVTheta
+                      << " ZVThetaCorr=" << data.ZVThetaCorr
+                      << std::endl;
+            break;
+        }
+        
+        case 0x80: { // MCU_FluxParams (BO_ 128)
+            const uint16_t rawZVTemperature =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 9));
+        
+            const uint16_t rawZVFlux =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 14, 16));
+        
+            const uint16_t rawZVRs =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 30, 16));
+        
+            data.ZVTemperature = static_cast<float>(rawZVTemperature);
+            data.ZVFlux        = static_cast<float>(rawZVFlux) * 0.0001f;
+            data.ZVRs          = static_cast<float>(rawZVRs) * 0.0001f;
+        
             std::cout << "[RX] FluxParams: "
-                    << "ZVFlux=" << data.ZVFlux
-                    << " ZVTheta=" << data.ZVTheta
-                    << std::endl;
+                      << "ZVTemperature=" << data.ZVTemperature
+                      << " ZVFlux=" << data.ZVFlux
+                      << " ZVRs=" << data.ZVRs
+                      << std::endl;
             break;
         }
 

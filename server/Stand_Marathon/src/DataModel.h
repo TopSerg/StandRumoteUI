@@ -81,6 +81,9 @@ struct DataModel {
     float ZVFlux = 0.0f;
     float ZVTheta = 0.0f;
     float ZVTemperature = 0.0f;
+    float ZVRs = 0.0f;
+    float ZVTimeStamp = 0.0f;
+    float ZVThetaCorr = 0.0f;
 
     float Ud = 0;
     float Uq = 0;

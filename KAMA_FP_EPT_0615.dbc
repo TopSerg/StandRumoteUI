@@ -1,0 +1,1800 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: GW TCU PTC EVCOM MCU BMS POD VCU ADCU Diag
+
+
+BO_ 677 DonorCar_MMI_AC_Command: 8 GW
+ SG_ MMI_AC_OnKey : 1|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_MaxAcKey : 2|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_FrontDefrostKey : 3|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_FreshReciKey : 5|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_AcKey : 7|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_BlowerFanLevel : 11|4@0+ (1,0) [0|15] ""  TCU
+ SG_ MMI_AirDistributionModeReq : 18|3@0+ (1,0) [0|7] ""  TCU
+ SG_ MMI_AirConditionerPowerKey : 20|1@0+ (1,0) [0|1] ""  TCU
+ SG_ MMI_LeftSetTemp : 28|5@0+ (0.5,17) [17|31.5] "��"  TCU
+
+BO_ 704 TCU_Status: 8 TCU
+ SG_ Checksum_2C0 : 63|8@0+ (1,0) [0|255] ""  BMS
+ SG_ MessageCounter_2C0 : 51|4@0+ (1,0) [0|15] ""  BMS
+ SG_ TCU_TMSState : 7|4@0+ (1,0) [0|15] ""  BMS
+ SG_ TCU_TMSFaultLevel : 3|3@0+ (1,0) [0|3] ""  BMS,VCU,ADCU
+ SG_ TCU_HvOnReq : 0|1@0+ (1,0) [0|1] ""  VCU
+ SG_ TCU_HVCHHighVoltage : 15|8@0+ (1,0) [0|508] "V"  VCU
+ SG_ TCU_HVCHHVDCCurrent : 23|8@0+ (0.25,0) [0|63.5] "A"  VCU,ADCU
+ SG_ TCU_TMSTotoalPwrReq : 31|8@0+ (200,0) [0|40000] "w"  VCU
+ SG_ TCU_BattTMState : 39|3@0+ (1,0) [0|7] ""  BMS
+ SG_ TCU_HVPwrState : 36|2@0+ (1,0) [0|3] ""  VCU,ADCU
+ SG_ TCU_HVACACState : 34|2@0+ (1,0) [0|4] ""  GW
+ SG_ TCU_EVCompState : 44|2@0+ (1,0) [0|3] ""  VCU
+ SG_ TCU_APTCState : 42|2@0+ (1,0) [0|3] ""  VCU
+ SG_ TCU_HVCHState : 55|2@0+ (1,0) [0|3] ""  VCU
+
+BO_ 705 TCU_Cmd: 8 TCU
+ SG_ TCU_APTCLeftCmd : 7|8@0+ (1,0) [0|100] "%"  PTC
+ SG_ TCU_APTCRightCmd : 15|8@0+ (1,0) [0|100] "%"  PTC
+ SG_ TCU_APTC1Enable : 16|1@0+ (1,0) [0|1] ""  PTC,ADCU
+ SG_ TCU_CompEnable : 17|1@0- (1,0) [0|1] ""  EVCOM
+ SG_ TCU_CompTargetSpeed : 31|13@0- (1,0) [0|8191] "rpm"  EVCOM
+ SG_ TCU_CompMaxAllowPwrCmsp : 47|8@0- (0.04,0) [0|10.16] "KW"  EVCOM
+ SG_ MessageCounter_2C1 : 51|4@0- (1,0) [0|15] ""  EVCOM
+ SG_ Checksum_2C1 : 63|8@0- (1,0) [0|255] ""  EVCOM
+
+BO_ 706 TCU_AmbientTemp: 8 TCU
+ SG_ TCU_AmbientTemperature : 7|8@0+ (1,-50) [-50|205] ""  GW,ADCU
+
+BO_ 754 TCU_ACStatusInfo: 8 TCU
+ SG_ AC_MaxAcState : 2|1@0+ (1,0) [0|1] ""  GW
+ SG_ AC_FrontDefrostState : 3|1@0+ (1,0) [0|1] ""  GW
+ SG_ AC_IntakeAirState : 5|2@0+ (1,0) [0|3] ""  GW
+ SG_ AC_BlowerLevel : 11|4@0+ (1,0) [0|15] ""  GW
+ SG_ AC_AirDistributionMode : 18|3@0+ (1,0) [0|7] ""  GW
+ SG_ AC_OnState : 20|1@0+ (1,0) [0|1] ""  GW
+ SG_ AC_LeftSetTemperature : 28|5@0+ (0.5,17) [17.5|31.5] "��"  GW
+
+BO_ 714 APTC_TCU: 8 PTC
+ SG_ APTC_HVPowerUpReq : 0|1@0+ (1,0) [0|1] ""  TCU
+ SG_ APTC_HeatingFaltStatus : 1|1@0+ (1,0) [0|1] ""  TCU
+ SG_ APTC_DriveFaltStatus : 2|1@0+ (1,0) [0|1] ""  TCU
+ SG_ APTC_LostCommuFaltStatus : 3|1@0+ (1,0) [0|1] ""  TCU
+ SG_ APTC_IGBTFaltStatus : 5|2@0+ (1,0) [0|3] ""  TCU
+ SG_ APTC_LeftCoreTemp : 15|8@0+ (1,-40) [-40|215] "deg"  TCU
+ SG_ APTC_RightCoreTemp : 23|8@0+ (1,-40) [-40|215] "deg"  TCU
+ SG_ APTC_HVBusVoltage : 39|11@0+ (0.05,0) [0|1020] "V"  TCU
+ SG_ APTC_PowerConsumption : 31|8@0+ (0.04,0) [0|10.2] "KW"  TCU
+ SG_ APTC_Core1TempSensorFaltStatus : 41|2@0+ (1,0) [0|3] ""  TCU
+ SG_ APTC_Core2TempSensorFaltStatus : 44|2@0+ (1,0) [0|3] ""  TCU
+
+BO_ 715 EVCOM_State: 8 EVCOM
+ SG_ EVCOM_OverPwrDropFreqError : 0|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_OverCurDropFreqError : 1|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CommunicationError : 2|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_StandByUnderVolError : 3|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_StandByOverVolError : 4|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_UnderVoltageError : 5|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_OverVoltageError : 6|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_OverCurrentError : 7|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CompDeviceInternTempError : 15|8@0+ (1,-40) [-40|215] "��"  TCU
+ SG_ EVCOM_CompActlSpdValid : 21|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CompActlCnsmpCurValid : 22|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CompActlPwrCnsmpValid : 23|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CompActlSpd : 31|13@0+ (1,0) [0|8191] "rpm"  TCU
+ SG_ EVCOM_CompActlPwrCnsmp : 47|8@0+ (0.04,0) [0|10.2] "KW"  TCU
+ SG_ EVCOM_CompActlCnsmpCur : 63|8@0+ (0.2,0) [0|51] "A"  TCU
+ SG_ EVCOM_ActlOprtMode : 52|2@0+ (1,0) [0|3] ""  TCU
+ SG_ EVCOM_FailStatus : 54|1@0+ (1,0) [0|1] ""  TCU
+ SG_ EVCOM_CompDeratingOprtStatus : 55|1@0+ (1,0) [0|1] ""  TCU
+
+BO_ 70 VCU_MCU01: 8 VCU
+ SG_ VCU_KL15On : 8|1@0+ (1,0) [0|1] ""  MCU
+ SG_ VCU_MCUDesiredTorque : 7|11@0+ (1.00000001,-1023.0) [-1023|1022] "Nm"  MCU
+ SG_ VCU_MCUSurgeDamperState : 10|2@0+ (1,0) [0|3] "SED"  MCU
+ SG_ VCU_BrakepedalStatus : 11|1@0+ (1,0) [0|1] ""  MCU
+ SG_ VCU_MCURequestedState : 47|4@0+ (1,0) [0|15] ""  MCU
+ SG_ VCU_TCSActive : 23|1@0+ (1,0) [0|1] ""  MCU
+ SG_ VCU_ActualGear : 22|3@0+ (1,0) [0|7] ""  MCU
+ SG_ MessageCounter_046 : 51|4@0+ (1,0) [0|15] ""  MCU
+ SG_ Checksum_046 : 63|8@0+ (1,0) [0|255] ""  MCU
+
+BO_ 71 VCU_MCU02: 8 VCU
+ SG_ VCU_MinTorqueLimit : 7|11@0+ (1.00000001,-1023) [-1023|1022] "Nm"  MCU
+ SG_ VCU_MaxTorqueGradient : 12|14@0+ (32.00000001,0) [0|524192] "Nm/s"  MCU
+ SG_ VCU_MaxTorqueLimit : 30|11@0+ (1.00000001,-1023) [-1023|1022] "Nm"  MCU
+ SG_ VCU_TrqThresholdDampgCtl : 35|8@0+ (0.1,0) [0|25] "Nm"  MCU
+ SG_ MessageCounter_047 : 51|4@0+ (1,0) [0|15] ""  MCU
+ SG_ Checksum_047 : 63|8@0+ (1,0) [0|255] ""  MCU
+ SG_ VCU_MaxSpeed : 43|5@0+ (100,0) [0|3100] "1/s" Vector__XXX
+
+BO_ 768 VCU_to_MCU_CurrentCommand: 8 VCU
+ SG_ VCU_IdCommand : 7|16@0+ (0.1,-3200) [-3200|3300] "A"  MCU
+ SG_ VCU_IqCommand : 23|16@0+ (0.1,-3200) [-3200|3300] "A"  MCU
+ SG_ VCU_CurrentCommandEnable : 39|1@0+ (1,0) [0|1] ""  MCU
+ SG_ MessageCounter_300 : 51|4@0+ (1,0) [0|15] ""  MCU
+ SG_ Checksum_300 : 63|8@0+ (1,0) [0|255] ""  MCU
+
+BO_ 627 VCU_DCDC: 8 VCU
+ SG_ Checksum_273 : 63|8@0+ (1,0) [0|255] ""  POD
+ SG_ MessageCounter_273 : 51|4@0+ (1,0) [0|15] ""  POD
+ SG_ VCU_VoltageDemandLV : 7|9@0+ (0.125,0) [0|63.675] "V"  POD,ADCU
+ SG_ VCU_ModeRequestDCDC : 14|3@0+ (1,0) [0|7] ""  POD,ADCU
+
+BO_ 629 VCU_POD: 8 VCU
+ SG_ VCU_Enable_DC_Relay : 21|1@0+ (1,0) [0|1] ""  POD
+
+BO_ 628 VCU_OBC: 8 VCU
+ SG_ Checksum_274 : 63|8@0+ (1,0) [0|255] ""  POD
+ SG_ MessageCounter_274 : 51|4@0+ (1,0) [0|15] ""  POD
+ SG_ VCU_OBC_Control_of_S2_SW : 7|1@0+ (1,0) [0|1] ""  POD
+ SG_ VCU_OBC_Control_of_em_lock : 6|1@0+ (1,0) [0|1] ""  POD
+ SG_ VCU_EnableOBC : 5|2@0+ (1,0) [0|3] ""  POD
+ SG_ VCU_OBC_ChargeCurrentCommand : 3|13@0+ (0.1,0) [0|500] "A"  POD
+
+BO_ 161 VCU_BMS: 8 VCU
+ SG_ Checksum_0A1 : 63|8@0+ (1,0) [0|255] ""  BMS
+ SG_ MessageCounter_0A1 : 51|4@0+ (1,0) [0|15] ""  BMS
+ SG_ VCU_RequestedModeBMS : 7|3@0+ (1,0) [0|7] ""  BMS
+ SG_ VCU_IsoMeasurementSwitch : 3|2@0+ (1,0) [0|1] ""  BMS
+ SG_ VCU_HVStatus : 15|4@0+ (1,0) [0|15] ""  TCU,BMS,ADCU
+ SG_ VCU_Chargestatus : 11|4@0+ (1,0) [0|9] ""  TCU,BMS,ADCU
+
+BO_ 630 VCU_TCU: 8 VCU
+ SG_ VCU_TCUPowerAllowed : 7|8@0+ (40,0) [0|64000] "W"  TCU
+ SG_ VCU_RequestedModeTCU : 15|2@0+ (1,0) [0|3] ""  TCU
+
+BO_ 880 POD_VCU_Status_01: 8 POD
+ SG_ POD_DCFCCurrent : 7|11@0+ (0.5,0) [0|1023.5] "A"  VCU
+ SG_ POD_DCFCVoltage : 12|13@0+ (0.1,0) [0|819.1] "V"  VCU
+ SG_ POD_Temperature : 31|8@0+ (1,-40) [-40|215] "��"  TCU,VCU
+ SG_ POD_DCInletTempA : 39|8@0+ (1,-40) [-40|215] "��"  VCU
+ SG_ POD_DCInletTempB : 47|8@0+ (1,-40) [-40|215] "��"  VCU
+
+BO_ 881 POD_VCU_Status_02: 8 POD
+ SG_ POD_TempSensor1Fault : 0|1@0+ (1,0) [0|1] ""  VCU
+ SG_ POD_DCPortInletTempBValid : 3|2@0+ (1,0) [0|2] ""  VCU
+ SG_ POD_DCPortInletTempAValid : 5|2@0+ (1,0) [0|2] ""  VCU
+ SG_ POD_DCPosRelayState : 7|2@0+ (1,0) [0|2] ""  VCU
+ SG_ POD_DCNegRelayState : 9|2@0+ (1,0) [0|2] ""  VCU
+
+BO_ 885 DCDC_VCU_01: 8 POD
+ SG_ Checksum_375 : 63|8@0+ (1,0) [0|255] ""  VCU
+ SG_ MessageCounter_375 : 51|4@0+ (1,0) [0|15] ""  VCU
+ SG_ DCDC_HVInputVoltage : 7|11@0+ (0.5,0) [0|1023.5] "V"  VCU
+ SG_ DCDC_LVOutputCurrent : 11|12@0+ (0.1,0) [0|400] "A"  TCU,VCU
+ SG_ DCDC_WorkMode : 31|2@0+ (1,0) [0|3] ""  VCU
+ SG_ DCDC_HVInputCurrent : 39|8@0+ (0.1,0) [0|25.5] "A"  VCU
+ SG_ DCDC_LVOutputVoltage : 47|8@0+ (0.1,0) [0|25.5] "V"  TCU,VCU
+
+BO_ 886 DCDC_VCU_02: 8 POD
+ SG_ DCDC_FaultStatus : 7|2@0+ (1,0) [0|3] ""  VCU
+ SG_ DCDC_OutputCurrentHighFault : 5|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_InputVoltHighFault : 4|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_InputVoltLowFault : 3|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_OutputVoltHighFault : 2|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_OutputVoltLowFault : 1|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_OutputSOGFault : 0|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_PrimarySideOvertempStatus : 9|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ DCDC_SecordarySideOvertempStatus : 15|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ DCDC_OBCTempHighFault : 16|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ DCDC_OutputCurrentSensorFault : 14|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_OutputTempSensorFault : 13|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_ComFault : 12|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_StopFault : 11|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_InternalFault : 10|1@0+ (1,0) [0|1] ""  VCU
+ SG_ DCDC_OBC_CANBusoff : 23|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ OBC_DCDC_KL30Error : 22|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ DCDC_SecondarySideTemp : 31|8@0+ (1,-40) [-40|215] "��"  TCU
+
+BO_ 887 OBC_VCU_STATUS1: 8 POD
+ SG_ OBC_InputACCurrent : 7|13@0+ (0.1,0) [0|500] "A"  VCU
+ SG_ OBC_ChargeStatus : 10|3@0+ (1,0) [0|7] "��"  VCU
+ SG_ OBC_InputACVoltage : 23|16@0+ (0.1,0) [0|6553.5] "V"  VCU
+ SG_ OBC_OutputDCChargeVoltage : 39|13@0+ (0.1,0) [0|819.1] "V"  TCU,VCU
+ SG_ OBC_OBCMaxPermOutpCrrt : 55|9@0+ (0.1,0) [0|40] "A"  VCU
+
+BO_ 888 OBC_VCU_STATUS2: 8 POD
+ SG_ OBC_ChrgOutpPwrAvl : 7|8@0+ (0.1,0) [0|25.5] "KW"  VCU
+ SG_ OBC_OutputDCChargeCurrent : 15|13@0+ (0.1,0) [0|500] "A"  TCU,VCU
+ SG_ OBC_ACPortTempA : 31|8@0+ (1,-40) [-40|215] "��"  VCU
+ SG_ OBC_ACPortTempB : 39|8@0+ (1,-40) [-40|215] "��"  VCU
+
+BO_ 889 OBC_VCU_CHRGSTATION_ST: 8 POD
+ SG_ OBC_CPCurrentLimit : 7|8@0+ (0.4,0) [0|102] "A"  VCU
+ SG_ OBC_CCStatus : 15|3@0+ (1,0) [0|7] "��"  VCU
+ SG_ OBC_CPStatus : 11|3@0+ (1,0) [0|7] "��"  VCU
+ SG_ OBC_CCCurrentLimit : 23|8@0+ (0.4,0) [0|102] "A"  VCU
+ SG_ OBC_CPFrequency : 31|11@0+ (1,0) [0|2000] "Hz"  VCU
+ SG_ OBC_CPDuty : 47|8@0+ (1,0) [0|255] "%"  VCU
+ SG_ OBC_EMLockState : 49|2@0+ (1,0) [0|2] ""  VCU
+ SG_ OBC_ChargCapacibility : 35|2@0+ (1,0) [0|2] ""  VCU
+ SG_ OBC_S2State : 33|2@0+ (1,0) [0|2] ""  VCU
+
+BO_ 890 OBC_Error_STATUS: 8 POD
+ SG_ OBC_ACPortTempASensValid : 7|2@0+ (1,0) [0|2] ""  VCU
+ SG_ OBC_ACPortTempBSensValid : 5|2@0+ (1,0) [0|2] ""  VCU
+ SG_ OBC_ACPortTempAerror : 9|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ OBC_ACPortTempBerror : 24|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ OBC_DCVoltLowFault : 3|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ OBC_FaultLevel : 2|2@0+ (1,0) [0|3] ""  VCU
+ SG_ OBC_DCVoltHighFault : 0|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_StartUpAllowed : 15|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_CommunFault : 14|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_DCCurHighFault : 13|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_ACVoltHighFault : 11|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_ACVoltLowFault : 10|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_NlineStatus : 8|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_InputFrequencyStatus : 23|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_InputPhaseStatus : 22|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_InputOverCurrentstatus_R : 21|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_InputOverCurrentstatus_S : 20|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_InputOverCurrentstatus_T : 19|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_PFCUnderVoltageError : 18|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_PFCOverVoltageError : 17|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_OutputShortError : 16|1@0+ (1,0) [0|1] ""  VCU
+ SG_ POD_faultTemp : 30|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_PrimarySideOvertempStatus : 29|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_SecordarySideOvertempStatus : 28|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_ComFault1 : 27|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_ComFault2 : 26|1@0+ (1,0) [0|1] ""  VCU
+ SG_ OBC_internalFault : 25|1@0+ (1,0) [0|1] "��"  VCU
+ SG_ OBC_PrimarySideTemp : 39|8@0+ (1,-40) [-40|210] "��"  TCU
+ SG_ OBC_SecondarySideTemp : 47|8@0+ (1,-40) [-40|210] "��"  TCU
+
+BO_ 912 BMS_Insulation: 8 BMS
+ SG_ BMS_SysRegInsulationValue : 39|16@0+ (1,0) [0|60000] "k��"  VCU
+ SG_ BMS_InsulationDetectionStatus : 55|1@0+ (1,0) [0|1] ""  VCU
+
+BO_ 174 BMS_status: 8 BMS
+ SG_ Checksum_AE : 63|8@0+ (1,0) [0|255] ""  VCU
+ SG_ MessageCounter_AE : 51|4@0+ (1,0) [0|15] ""  VCU
+ SG_ BMS_status : 7|4@0+ (1,0) [0|15] ""  VCU
+ SG_ BMS_BatStatus : 3|4@0+ (1,0) [0|4] ""  VCU
+ SG_ BMS_PreCharge : 15|4@0+ (1,0) [0|15] ""  VCU
+ SG_ BMS_ChargeStatus : 11|4@0+ (1,0) [0|15] ""  TCU,VCU
+ SG_ BMS_RunHeatStatus : 23|4@0+ (1,0) [0|15] ""  TCU,VCU
+ SG_ BMS_ErrorLevel : 43|4@0+ (1,0) [0|4] ""  VCU
+ SG_ BMS_BalancingStatus : 47|1@0+ (1,0) [0|1] ""  TCU,VCU
+ SG_ BMS_SOH : 39|8@0+ (0.5,0) [0|100] "%"  VCU
+ SG_ BMS_HVinterlockState : 17|2@0+ (1,0) [0|3] ""  VCU
+
+BO_ 175 BMS_BatInfor1: 8 BMS
+ SG_ BMS_BattVolt : 7|14@0+ (0.1,0) [0|1000] ""  TCU,MCU
+ SG_ BMS_BattCurr : 23|15@0+ (0.1,-1024) [-1024|1023] ""  TCU,MCU
+ SG_ Checksum_AF : 63|8@0+ (1,0) [0|255] ""  VCU
+ SG_ MessageCounter_AF : 51|4@0+ (1,0) [0|15] ""  VCU
+
+BO_ 665 BMS_PackVoltage: 8 BMS
+ SG_ BMS_PackVoltage : 7|16@0+ (0.1,0) [0|65535] "V"  VCU
+ SG_ BMS_LinkVoltage : 23|16@0+ (0.1,0) [0|65535] "V"  VCU
+ SG_ BMS_SOC : 39|16@0+ (0.01,-550) [0|100] "%"  TCU,VCU
+ SG_ BMS_DisplaySOC : 55|16@0+ (0.01,-550) [0|100] "%"  TCU,VCU
+
+BO_ 659 BMS_DIRelayState: 8 BMS
+ SG_ BMS_PosRelayStatus : 7|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_PTCRelayStatus : 5|2@0+ (1,0) [0|3] ""  MCU
+ SG_ BMS_NegRelayStatus : 3|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_PreRelayStatus : 1|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateRelay4 : 15|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateRelay5 : 13|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateRelay6 : 11|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateRelay7 : 9|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateRelay8 : 23|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI2 : 21|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI3 : 19|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI4 : 17|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI5 : 31|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI6 : 29|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI7 : 27|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_StateDI8 : 25|2@0+ (1,0) [0|3] ""  VCU
+
+BO_ 660 BMS_ChargeStop: 8 BMS
+ SG_ BMS_ChrgDcChrgnReq : 1|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_DCChgMode : 3|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortAchiveSingleVolt : 5|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortAchiveTotalVolt : 7|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortFaultBMSTemp : 15|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortFaultBatteryTemp : 13|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortErrorCurrent : 11|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortAchivesetValue : 17|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_AbortErrorVoltage : 9|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ChagComplete : 21|4@0+ (1,0) [0|4] ""  VCU
+
+BO_ 661 BMS_Charge1: 8 BMS
+ SG_ BMS_RemChagTime : 7|16@0+ (1,0) [0|3600] "Min"  VCU
+ SG_ BMS_MaxChagVoltage : 23|16@0+ (0.1,0) [0|6553.5] "V"  VCU
+ SG_ BMS_AllowChagCurrent : 55|16@0+ (0.1,-1000) [-1000|1000] "A"  VCU
+
+BO_ 662 BMS_CurrentLimit: 8 BMS
+ SG_ BMS_FeedbackCurr : 7|16@0+ (0.1,-1000) [-1000|1000] "A"  VCU
+ SG_ BMS_DisChgCurr : 39|16@0+ (0.1,-1000) [-1000|1000] "A"  VCU
+
+BO_ 1170 BMS_BatInfor2: 8 BMS
+ SG_ BMS_BatType : 7|4@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatSupName : 3|4@0+ (1,0) [0|4294967295] ""  VCU
+ SG_ BMS_CellNumbers : 15|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_RatCapacity : 23|16@0+ (0.1,0) [0|6553.5] "Ah"  VCU
+ SG_ BMS_RatEnergy : 55|16@0+ (1,0) [0|65535] "KWH"  VCU
+ SG_ BMS_RatBatVoltage : 39|16@0+ (0.1,0) [0|6553.5] "V"  VCU
+
+BO_ 1171 BMS_ChargeEnergy: 8 BMS
+ SG_ BMS_SingChgkwh : 7|8@0+ (1,0) [0|255] "KWH"  VCU
+ SG_ BMS_SumChgkwh : 15|24@0+ (1,0) [0|16777216] "KWH"  VCU
+ SG_ BMS_BatChagSum : 39|16@0+ (1,0) [0|3000] ""  VCU
+
+BO_ 1172 BMS_DisChargeEnergy: 8 BMS
+ SG_ BMS_SumDisChgkwh : 7|24@0+ (1,0) [0|16777216] "KWH"  VCU
+
+BO_ 666 BMS_CellVoltage1: 8 BMS
+ SG_ BMS_MaxCellVoltage : 7|16@0+ (0.001,0) [0|65.535] "V"  VCU
+ SG_ BMS_MinCellVoltage : 23|16@0+ (0.001,0) [0|65.535] "V"  VCU
+ SG_ BMS_MaxCellVoltageModuleNO : 39|4@0+ (1,0) [0|15] ""  VCU
+ SG_ BMS_MinCellVoltageModlueNO : 35|4@0+ (1,0) [0|15] ""  VCU
+ SG_ BMS_MaxCellVoltageNO : 47|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_MinCellVoltageNO : 55|8@0+ (1,0) [0|255] ""  VCU
+
+BO_ 801 BMS_Temp: 8 BMS
+ SG_ BMS_ThermometerProbes : 7|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ BMS_AverageCellTemp : 15|8@0+ (1,-40) [-40|215] "��"  TCU,VCU
+ SG_ BMS_MaxCellTemp : 23|8@0+ (1,-40) [-40|215] "��"  TCU,VCU
+ SG_ BMS_MinCellTemp : 31|8@0+ (1,-40) [-40|215] "��"  TCU,VCU
+ SG_ BMS_MaxCellTempModuleNO : 39|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ BMS_MinCellTempModuleNO : 47|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ BMS_MaxCellTempNO : 55|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ BMS_MinCellTempNO : 63|8@0+ (1,0) [0|255] ""  TCU,VCU
+
+BO_ 803 BMS_TCU: 8 BMS
+ SG_ Checksum_5 : 63|8@0+ (1,0) [0|255] ""  TCU
+ SG_ MessageCounter_5 : 51|4@0+ (1,0) [0|15] ""  TCU
+ SG_ BMS_AllowCellTemperature : 7|8@0+ (1,-40) [-40|215] "��"  VCU
+ SG_ BMS_TargetBatteryMaxCellTemp : 15|8@0+ (1,-40) [-40|215] "��"  TCU
+ SG_ BMS_TempInlet : 23|8@0+ (1,-40) [-40|215] "��"  TCU
+ SG_ BMS_Tempoutlet : 31|8@0+ (1,-40) [-40|215] "��"  TCU
+ SG_ BMS_FlowRate : 39|8@0+ (1,0) [0|255] "L/min"  TCU
+ SG_ BMS_HeatCommand : 47|3@0+ (1,0) [0|8] ""  TCU
+ SG_ BMS_BalanceCommand : 40|1@0+ (1,0) [0|1] ""  TCU
+ SG_ BMS_CoolCommand : 43|3@0+ (1,0) [0|8] ""  TCU
+
+BO_ 897 BMS_Batcode: 8 BMS
+ SG_ BMS_BatCodeFrameNO : 7|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCodeFrameLength : 15|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode1 : 23|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode2 : 31|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode3 : 39|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode4 : 47|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode5 : 55|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatCode6 : 63|8@0+ (1,0) [0|255] ""  VCU
+
+BO_ 898 BMS_ErrorInfo1: 8 BMS
+ SG_ BMS_ErrorCellOverVolt : 7|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellUnderVolt : 5|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellHighTemp : 3|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellLowTemp : 1|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorBattOverVolt : 15|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorBattUnderVolt : 13|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorChaCurrentOver : 11|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorDisChaCurrentOver : 9|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorBSUOffline : 23|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorLeakCurrent : 21|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellVoltDiff : 19|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellTempDiff : 17|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorBatVolt : 31|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorHallOffline : 29|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellVoltOffline : 28|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorCellTempOffline : 27|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorPreChaFailed : 26|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorRelay : 25|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorBSUBalance : 24|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorIsolationSingleLow : 39|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorLowSOC : 37|2@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorHighSoc : 35|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorSoCJump_RM : 34|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorHVIL : 33|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorEmergencyOffCrash : 32|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorSystemsMatch : 47|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorSmoke : 46|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ErrorLeakDet : 45|1@0+ (1,0) [0|3] ""  VCU
+ SG_ BMS_ThermalRunawayFault : 56|1@0+ (1,0) [0|3] ""  TCU,VCU
+ SG_ BMS_DTC : 55|8@0+ (1,0) [0|255] ""  VCU
+
+BO_ 945 BMS_VersionInfor: 8 BMS
+ SG_ BMS_SoftVsesion : 7|8@0+ (1,0) [0|1] ""  VCU
+ SG_ BMS_HardVsesion : 15|8@0+ (1,0) [0|1] ""  VCU
+ SG_ BMS_BRMVersions : 23|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ BMS_ComVersion : 39|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ BMS_BatProRights : 51|1@0+ (1,0) [0|1] ""  VCU
+ SG_ BMS_Life : 63|8@0+ (1,0) [0|255] ""  VCU
+
+BO_ 946 BMS_PRO: 8 BMS
+ SG_ BMS_BatProDatYear : 7|8@0+ (1,1985) [0|255] ""  VCU
+ SG_ BMS_BatProDatMonth : 15|8@0+ (1,0) [0|255] ""  VCU
+ SG_ BMS_BatProDatDay : 23|8@0+ (1,0) [0|255] ""  VCU
+
+BO_ 122 MCU_VCU_1: 8 MCU
+ SG_ MCU_ActualTorque : 7|11@0+ (1,-1024) [-1024|1023] ""  TCU,VCU
+ SG_ MCU_UdcCurr : 12|10@0+ (1,0) [0|1021] ""  TCU,VCU
+ SG_ MCU_IsCurr : 18|11@0+ (1,-1024) [-1024|1022.5] ""  TCU,VCU
+ SG_ MCU_ActualSpeed : 39|16@0+ (1,-32768) [-32768|32767] ""  TCU,VCU
+ SG_ MessageCounter_7A : 51|4@0+ (1,0) [0|15] ""  VCU
+ SG_ MCU_ActTrqValid : 52|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_ActualSpeedValid : 53|1@0+ (1,0) [0|1] ""  VCU
+
+BO_ 123 MCU_Temperature1: 8 MCU
+ SG_ MCU_IGBTTempU : 7|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_IGBTTempV : 15|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_IGBTTempW : 23|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_IGBTTempMax : 31|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_IGBTTempRiseU : 39|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ MCU_IGBTTempRiseV : 47|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ MCU_IGBTTempRiseW : 55|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ MCU_IGBTTempRiseMax : 63|8@0+ (1,0) [0|255] ""  TCU,VCU
+
+BO_ 124 MCU_Temperature2: 8 MCU
+ SG_ MCU_TempCurrCool : 7|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_TempCurrStr1 : 15|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_TempCurrStr2 : 23|8@0+ (1,-50) [-50|205] ""  TCU,VCU
+ SG_ MCU_TempCurrStr : 31|8@0+ (1,-50) [-50|205] ""  TCU
+ SG_ MCU_TempRiseCurrStr : 39|8@0+ (1,0) [0|255] ""  TCU,VCU
+ SG_ MCU_TempStatus : 47|2@0+ (1,0) [0|3] ""  TCU,VCU
+
+BO_ 125 MCU_Status: 8 MCU
+ SG_ MCU_OfsAl : 7|12@0+ (0.0878906,0) [0|359.736] ""  VCU
+ SG_ MCU_Isd : 11|12@0+ (0.5,-1023.5) [-1023.5|1023] ""  VCU
+ SG_ MCU_Isq : 31|12@0+ (0.5,-1023.5) [-1023.5|1023] ""  VCU
+ SG_ MCU_bDmpCActv : 35|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_stGateDrv : 34|2@0+ (1,0) [0|3] ""  VCU
+ SG_ MCU_DmpCTrqCurr : 55|8@0+ (0.2,-25) [-25|25] "Nm"  VCU
+ SG_ MCU_VCUWorkMode : 59|4@0+ (1,0) [0|15] ""  VCU
+
+BO_ 126 MCU_CurrentVoltage: 8 MCU
+ SG_ Ud : 7|16@0+ (0.1,-3276) [-3276|3277] "V" VCU
+ SG_ Uq : 23|16@0+ (0.1,-3276) [-3276|3277] "V" VCU
+ SG_ Id : 39|16@0+ (0.1,-3276) [-3276|3277] "A" VCU
+ SG_ Iq : 55|16@0+ (0.1,-3276) [-3276|3277] "A" VCU
+
+BO_ 127 MCU_Theta: 8 MCU
+ SG_ ZVTimeStamp : 7|16@0+ (1,0) [0|65535] "S" VCU
+ SG_ ZVTHetha : 23|16@0+ (0.0001,0) [0|7] "Degree" VCU
+ SG_ ZVTHethaCorr : 39|16@0+ (0.0001,0) [0|7] "Degree" VCU
+
+BO_ 128 MCU_FluxParams: 8 MCU
+ SG_ ZVTemperature : 7|9@0+ (1,0) [0|400] "S" VCU
+ SG_ ZVFlux : 14|16@0+ (0.0001,0) [0|7] "Degree" VCU
+ SG_ ZVRs : 30|16@0+ (0.0001,0) [0|7] "Om" VCU
+
+BO_ 709 MCU_DeratingStatus: 8 MCU
+ SG_ MCU_bDernOvrIdc : 6|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernOvrUdc : 5|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernStrTemp : 4|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernTrqMax : 3|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernTrqMin : 2|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernUndrIdc : 1|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernUndrUdc : 0|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bReadyHv : 15|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernTempIGBT : 14|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernTempCool : 13|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_bDernN : 12|1@0+ (1,0) [0|1] ""  VCU
+ SG_ MCU_TrqAbsMax : 11|11@0+ (1,-1024) [-1024|1023] ""  VCU
+ SG_ MCU_TrqAbsMin : 16|11@0+ (1,-1024) [-1024|1023] ""  VCU
+ SG_ MCU_stDischg : 55|2@0+ (1,0) [0|3] ""  VCU
+ SG_ MCU_UT15Curr : 63|6@0+ (0.5,0) [0|30.5] ""  VCU
+
+BO_ 710 MCU_FailureCode: 8 MCU
+ SG_ MCU_FailCode1 : 7|3@0+ (1,0) [0|7] ""  VCU
+ SG_ MCU_Softwae_FaultBit : 15|19@0+ (1,0) [0|524287] ""  VCU
+ SG_ MCU_Hardware_Fault : 39|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ MCU_Sensor_Fault : 55|8@0+ (1,0) [0|255] ""  VCU
+ SG_ MCU_CAN_Fault : 63|8@0+ (1,0) [0|255] "" Vector__XXX
+
+BO_ 1178 MCU_SoftwareNumber: 8 MCU
+ SG_ MCU_CodeVer : 7|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ MCU_DataVer : 23|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ MCU_CpldVer : 39|16@0+ (1,0) [0|65535] ""  VCU
+ SG_ MCU_HvMcuVer : 55|16@0+ (1,0) [0|65535] ""  VCU
+
+BO_ 1179 MCU_HardwareNumber: 8 MCU
+ SG_ MCU_HwVer : 7|16@0+ (1,0) [0|65535] ""  VCU
+
+
+BO_ 911 GW_BCM: 8 GW
+ SG_ BCM_RLHSSolarDrvr : 7|8@0+ (4,0) [0|1000] "W/m2"  TCU,ADCU
+ SG_ BCM_RLHSSolarPass : 15|8@0+ (4,0) [0|1000] "W/m2"  TCU,ADCU
+ SG_ BCM_RLHSHumidSensorValue : 23|8@0+ (0.5,0) [0|100] "%"  TCU,ADCU
+ SG_ BCM_RLHSTempSensorValue : 31|8@0+ (0.5,-40) [-40|120] "��"  TCU,ADCU
+ SG_ BCM_RLHSTempDewPoint : 39|11@0+ (0.1,-40) [-40|120] "��"  TCU
+
+
+
+CM_ SG_ 677 MMI_AC_OnKey "ON state key";
+CM_ SG_ 677 MMI_MaxAcKey "Max AC key";
+CM_ SG_ 677 MMI_FrontDefrostKey "Defrost key";
+CM_ SG_ 677 MMI_FreshReciKey "R/F key";
+CM_ SG_ 677 MMI_AcKey "AC key";
+CM_ SG_ 677 MMI_BlowerFanLevel "Blower fan Level";
+CM_ SG_ 677 MMI_AirDistributionModeReq "Air distribution mode request";
+CM_ SG_ 677 MMI_AirConditionerPowerKey "Air Conditioner Power Key";
+CM_ SG_ 677 MMI_LeftSetTemp "Left set temperature";
+CM_ SG_ 704 Checksum_2C0 "Checksum signal for frame";
+CM_ SG_ 704 MessageCounter_2C0 "Message counter signal for frame";
+CM_ SG_ 704 TCU_TMSState "Thermal management control state";
+CM_ SG_ 704 TCU_TMSFaultLevel "TMS SYSTEM Error level";
+CM_ SG_ 704 TCU_HvOnReq "High voltage on request
+��ѹ�ϵ�����";
+CM_ SG_ 704 TCU_HVCHHighVoltage "HVCH High Voltage Measurement";
+CM_ SG_ 704 TCU_HVCHHVDCCurrent "Current Draw of HV-PTC";
+CM_ SG_ 704 TCU_TMSTotoalPwrReq "AC system total power request
+�յ�ϵͳ��������";
+CM_ SG_ 704 TCU_BattTMState "TCU battery Thermal management system status
+TCU ����ȹ���״̬";
+CM_ SG_ 704 TCU_HVPwrState "TCU High voltage supply Status
+TCUϵͳ��ѹ����״̬";
+CM_ SG_ 704 TCU_HVACACState "Front HVAC Cool Or Heat Or Vent Auto State
+ǰ�յ���������ͨ���Զ�״̬";
+CM_ SG_ 704 TCU_EVCompState "Compressor work state
+ѹ��������״̬";
+CM_ SG_ 704 TCU_APTCState "Air heater work state
+��������������״̬";
+CM_ SG_ 704 TCU_HVCHState "Water heater work state
+ˮ����������״̬";
+CM_ SG_ 705 TCU_APTCLeftCmd " Actual power output percent of APTC Left zone 
+����PTC��������ٷֱ�";
+CM_ SG_ 705 TCU_APTCRightCmd " Actual power output percent of APTC Right zone 
+����PTC��������ٷֱ�";
+CM_ SG_ 705 TCU_APTC1Enable "Vehicle Speed too Fast Warning
+�����ٶȹ�������";
+CM_ SG_ 705 TCU_CompEnable "Compressor Operate Enable Command
+ѹ��������ʹ������";
+CM_ SG_ 705 TCU_CompTargetSpeed "Compressor Target Speed
+ѹ����Ŀ��ת��";
+CM_ SG_ 705 TCU_CompMaxAllowPwrCmsp "Compressor  Maximum Allowed Power Comsuption
+ѹ��������������Ĺ���";
+CM_ SG_ 705 MessageCounter_2C1 "Message Alive Counter";
+CM_ SG_ 705 Checksum_2C1 "Message Checksum
+Protected data range starts from bit 0 to bit 55.";
+CM_ SG_ 754 AC_MaxAcState "�������״̬";
+CM_ SG_ 754 AC_FrontDefrostState "��˪״̬";
+CM_ SG_ 754 AC_IntakeAirState "����ѭ������";
+CM_ SG_ 754 AC_BlowerLevel "���絵λ";
+CM_ SG_ 754 AC_AirDistributionMode "����ģʽ";
+CM_ SG_ 754 AC_OnState "�յ�����״̬";
+CM_ SG_ 754 AC_LeftSetTemperature "�趨�¶�";
+CM_ SG_ 714 APTC_HVPowerUpReq "APTC high voltage power supply  off line request
+APTC ��ѹ��������";
+CM_ SG_ 714 APTC_HeatingFaltStatus "ptc heater core status";
+CM_ SG_ 714 APTC_DriveFaltStatus "ptc driver status";
+CM_ SG_ 714 APTC_LostCommuFaltStatus "TCU signal lost";
+CM_ SG_ 714 APTC_IGBTFaltStatus "IGBT failure";
+CM_ SG_ 714 APTC_LeftCoreTemp "Left core sensor temperature
+���о���¶ȴ������¶�
+";
+CM_ SG_ 714 APTC_RightCoreTemp "Right core sensor temperature
+�Ҳ�о���¶ȴ������¶�
+";
+CM_ SG_ 714 APTC_HVBusVoltage "HV voltage
+��ѹ��ѹֵ";
+CM_ SG_ 714 APTC_PowerConsumption "APTC OutPut Power
+APTC �������";
+CM_ SG_ 714 APTC_Core1TempSensorFaltStatus "Left core sensor temperature error";
+CM_ SG_ 714 APTC_Core2TempSensorFaltStatus "Right core sensor temperature error";
+CM_ SG_ 715 EVCOM_OverPwrDropFreqError "EVCOM  Over Power Drop Frequency Error";
+CM_ SG_ 715 EVCOM_OverCurDropFreqError "EVCOM  Over Current Drop Frequency Error";
+CM_ SG_ 715 EVCOM_CommunicationError "EVCOM  Communication Error";
+CM_ SG_ 715 EVCOM_StandByUnderVolError "EVCOM  Stand By Under Voltage Error";
+CM_ SG_ 715 EVCOM_StandByOverVolError "EVCOM  Stand By Over Voltage Error";
+CM_ SG_ 715 EVCOM_UnderVoltageError "EVCOM  Under Voltage Error";
+CM_ SG_ 715 EVCOM_OverVoltageError "EVCOM  Over Voltage Error";
+CM_ SG_ 715 EVCOM_OverCurrentError "EVCOM  Over Current Error";
+CM_ SG_ 715 EVCOM_CompDeviceInternTempError "Device Internal Temperature
+�豸�ڲ��¶�";
+CM_ SG_ 715 EVCOM_CompActlSpdValid "Compressor Actual Speed Validity
+ѹ����ʵ����ת�ٶ���Ч��";
+CM_ SG_ 715 EVCOM_CompActlCnsmpCurValid "Compressor Actual Consuption Current Validity
+ѹ�������е�����Ч��";
+CM_ SG_ 715 EVCOM_CompActlPwrCnsmpValid "Compressor Actual Power Consumption Validity
+ѹ����ʵ�����Ĺ�����Ч��";
+CM_ SG_ 715 EVCOM_CompActlSpd "Compressor Actual Speed
+ѹ����ʵ����ת�ٶ�";
+CM_ SG_ 715 EVCOM_CompActlPwrCnsmp "Compressor Actual Power Consumption 
+ѹ����ʵ�����Ĺ���";
+CM_ SG_ 715 EVCOM_CompActlCnsmpCur "Compressor Run Current
+ѹ�������е���";
+CM_ SG_ 715 EVCOM_ActlOprtMode "Air Conditioning Compressor Actual Operation Mode
+�յ�ѹ����ʵ������ģʽ";
+CM_ SG_ 715 EVCOM_FailStatus "Air Conditioning Compressor Failure Status
+�յ�ѹ����ʧЧ״̬";
+CM_ SG_ 715 EVCOM_CompDeratingOprtStatus "Air Conditioning Compressor Derating Operation Status
+�յ�ѹ������������״̬";
+CM_ SG_ 70 VCU_KL15On "the bit status of KL15 signal ";
+CM_ SG_ 70 VCU_MCUDesiredTorque "Desired torque electric machine";
+CM_ SG_ 70 VCU_MCUSurgeDamperState "Requested surge damper state";
+CM_ SG_ 70 VCU_BrakepedalStatus "the break pedal statusɲ��̤��״̬";
+CM_ SG_ 70 VCU_MCURequestedState "Request to the electric machine";
+CM_ SG_ 70 VCU_TCSActive "EN:Tindicates  TCS intervention active��TCS will detect spinning wheels and request torque reduction/limitation
+CH:CS�����־λ";
+CM_ SG_ 70 VCU_ActualGear "The actual gear status";
+CM_ SG_ 70 MessageCounter_046 "the rolling counter of VCU02";
+CM_ SG_ 70 Checksum_046 "the checksum of VCU02";
+CM_ SG_ 71 VCU_MinTorqueLimit "Lower limit output torque of electric machine";
+CM_ SG_ 71 VCU_MaxTorqueGradient "Maximum allowed change rate of actual torque";
+CM_ SG_ 71 VCU_MaxTorqueLimit "Upper limit output torque of electric machine";
+CM_ SG_ 71 VCU_TrqThresholdDampgCtl "Threshold torque for damping control";
+CM_ SG_ 71 MessageCounter_047 "the rolling counter of VCU01";
+CM_ SG_ 71 Checksum_047 "the checksum of VCU01";
+CM_ BO_ 768 "Message from VCU to MCU: real-time current commands.";
+CM_ SG_ 768 VCU_IdCommand "Direct axis current command, in A.";
+CM_ SG_ 768 VCU_IqCommand "Quadrature axis current command, in A.";
+CM_ SG_ 768 VCU_CurrentCommandEnable "Enables the current command transmission.";
+CM_ SG_ 627 Checksum_273 "CRC-XXX";
+CM_ SG_ 627 MessageCounter_273 "Alive Counter_xxx";
+CM_ SG_ 627 VCU_VoltageDemandLV "Desired voltage of the DCDC converter LV side (buck mode 13.8v)";
+CM_ SG_ 627 VCU_ModeRequestDCDC "Requested state of the DCDC converter";
+CM_ SG_ 629 VCU_Enable_DC_Relay "enable: Request for closing DC charging relay";
+CM_ SG_ 628 Checksum_274 "Checksum signal for frame";
+CM_ SG_ 628 MessageCounter_274 "Message counter signal for frame";
+CM_ SG_ 628 VCU_OBC_Control_of_S2_SW "OBC should accept the control signal from VCU to switch the S2 inside the OBC";
+CM_ SG_ 628 VCU_OBC_Control_of_em_lock "OBC should accept the control signal from VCU to lock or unlock the actuator in the Inlet for locking or unlocking the charging plug";
+CM_ SG_ 628 VCU_EnableOBC "When VCU receiving OBC Charge Status=?Ready? and detecting the status of S2 is closed,VCU send enable;
+When  VCU detect that the stop charging condition is met, VUC send disable.";
+CM_ SG_ 628 VCU_OBC_ChargeCurrentCommand "OBC output charging current according to this signal.";
+CM_ SG_ 161 Checksum_0A1 "Checksum signal for frame";
+CM_ SG_ 161 MessageCounter_0A1 "Message counter signal for frame";
+CM_ SG_ 161 VCU_RequestedModeBMS "Interface to request eletric energy storage target mode";
+CM_ SG_ 161 VCU_IsoMeasurementSwitch "Isolation measurement switch";
+CM_ SG_ 161 VCU_HVStatus "HV System state";
+CM_ SG_ 161 VCU_Chargestatus "Charge state";
+CM_ SG_ 630 VCU_TCUPowerAllowed "TCU Maximum Allowed Power Comsuption";
+CM_ SG_ 630 VCU_RequestedModeTCU "Requested mode of TCU";
+CM_ SG_ 880 POD_DCFCCurrent "DC relay out side current";
+CM_ SG_ 880 POD_DCFCVoltage "DC relay out side voltage";
+CM_ SG_ 880 POD_Temperature "This signal reflects the temperature of Coolant outlet and structure";
+CM_ SG_ 880 POD_DCInletTempA "Actual DC + temperatur connector";
+CM_ SG_ 880 POD_DCInletTempB "Actual DC - temperatur connector";
+CM_ SG_ 881 POD_TempSensor1Fault "POD temperature fault of the temporature Coolant outlet or structure";
+CM_ SG_ 881 POD_DCPortInletTempBValid "Error state for the temperature sensor. E.g. damaged or short circuit at the temperature sensor in the inlet.";
+CM_ SG_ 881 POD_DCPortInletTempAValid "Error state for the temperature sensor. E.g. damaged or short circuit at the temperature sensor in the inlet.";
+CM_ SG_ 881 POD_DCPosRelayState "Give feedback of DC charge positive relay state";
+CM_ SG_ 881 POD_DCNegRelayState "Give feedback of DC charge negative relay state";
+CM_ SG_ 885 Checksum_375 "Checksum signal for frame";
+CM_ SG_ 885 MessageCounter_375 "Message counter signal for frame";
+CM_ SG_ 885 DCDC_HVInputVoltage "Voltage at high voltage side";
+CM_ SG_ 885 DCDC_LVOutputCurrent "Current on low voltage side";
+CM_ SG_ 885 DCDC_WorkMode "State DCDC converter";
+CM_ SG_ 885 DCDC_HVInputCurrent "Current at high voltage side";
+CM_ SG_ 885 DCDC_LVOutputVoltage "Voltage on low voltage side";
+CM_ SG_ 886 DCDC_FaultStatus "No fault?this value means the DCDC is normal. Recoverable fault? DCDC will down power and wait for the fault clear, and retry. 
+Unrecoverable fault?when DCDC detect this fault, 
+DCDC should stop output and power down,when the power is reduced, also need to send this signal.
+0x1=Level1--Upload error code(Derating);
+0x2=Level2--Upload error code,Recoverable 5 times,if unrecoverable, will upload level 3;
+0x3=Level3--stop output(Unrecoverable);";
+CM_ SG_ 886 DCDC_OutputCurrentHighFault "DCDC output overcurrent fault";
+CM_ SG_ 886 DCDC_InputVoltHighFault "DCDC input overvoltage fault";
+CM_ SG_ 886 DCDC_InputVoltLowFault "DCDC input undervoltage fault";
+CM_ SG_ 886 DCDC_OutputVoltHighFault "DCDC output overvoltage fault";
+CM_ SG_ 886 DCDC_OutputVoltLowFault "DCDC output undervoltage fault";
+CM_ SG_ 886 DCDC_OutputSOGFault "DCDC output is short-to-ground fault";
+CM_ SG_ 886 DCDC_PrimarySideOvertempStatus "DCDC Primary side overtemperature fault";
+CM_ SG_ 886 DCDC_SecordarySideOvertempStatus "DCDC Secordary side overtemperature fault";
+CM_ SG_ 886 DCDC_OBCTempHighFault "PCB overtemperature fault��environmental overtemprerature)";
+CM_ SG_ 886 DCDC_OutputCurrentSensorFault "DCDC the low-side current sensor is faulty";
+CM_ SG_ 886 DCDC_OutputTempSensorFault "DCDC the low-voltage side temperature sensor is faulty";
+CM_ SG_ 886 DCDC_ComFault "DCDC communication fault";
+CM_ SG_ 886 DCDC_StopFault "DCDC shutdown failure failure";
+CM_ SG_ 886 DCDC_InternalFault "DCDC internal error";
+CM_ SG_ 886 DCDC_OBC_CANBusoff "CAN  Busoff error";
+CM_ SG_ 886 OBC_DCDC_KL30Error "KL30 error";
+CM_ SG_ 886 DCDC_SecondarySideTemp "This signal is sent to TMS,according to this signal, TCU control the temporature of water";
+CM_ SG_ 887 OBC_InputACCurrent "Report OBC AC current(when singal charging,it is 32A��when three-phase charging ,report the maximum current of one phase)";
+CM_ SG_ 887 OBC_ChargeStatus "Idle? when OBC shut up & be able to send message /
+Ready?when OBC finish init. & itself detec./Charging/
+Fault?when OBC Fault Level=?Recoverable fault?,stop output but not power down
+/Level=?Unrecoverable fault?,stop output and pow.down
+/Stop?stop pow.down";
+CM_ SG_ 887 OBC_InputACVoltage "Input voltage to OBC
+This signal means the input phase voltage to OBC. When it is a three-phase charge, the minimum voltage of each phase is reported";
+CM_ SG_ 887 OBC_OutputDCChargeVoltage "OutputDCChargeVoltage";
+CM_ SG_ 887 OBC_OBCMaxPermOutpCrrt "Report OBC Max Permit Output Current ";
+CM_ SG_ 888 OBC_ChrgOutpPwrAvl "Report the maximum output power at present.";
+CM_ SG_ 888 OBC_OutputDCChargeCurrent "OBC output current when charge";
+CM_ SG_ 888 OBC_ACPortTempA "Actual temperatur connector A";
+CM_ SG_ 888 OBC_ACPortTempB "Actual temperatur connector B";
+CM_ SG_ 889 OBC_CPCurrentLimit "Maximum AC current of infrastructure signalled by charging station with Duty-Cycle on the CP-PWM-Signal.";
+CM_ SG_ 889 OBC_CCStatus "0��unconnected
+1��Half-connected
+2��1500Ohm
+3��680Ohm
+4��220Ohm
+5:  100Ohm
+6:   2000Ohm
+7������";
+CM_ SG_ 889 OBC_CPStatus "Feedback the connected status of CP to VCU";
+CM_ SG_ 889 OBC_CCCurrentLimit "Maximum AC current of vehicle plug and cable detected by the EV.
+ For different charging plugs and cables e.g. with lower current performance then the charging station there are seperate values of resistors (RC and R4) inside the charging plug";
+CM_ SG_ 889 OBC_CPFrequency "CP frequency";
+CM_ SG_ 889 OBC_CPDuty "CP Duty";
+CM_ SG_ 889 OBC_EMLockState "Give feedback of EM lock status to VCU";
+CM_ SG_ 889 OBC_ChargCapacibility "single-phase or three-phase ";
+CM_ SG_ 889 OBC_S2State "Give feedback of S2 status to VCU";
+CM_ SG_ 890 OBC_ACPortTempASensValid "Error state for the temperature sensor. E.g. damaged or short circuit at the temperature sensor in the inlet.";
+CM_ SG_ 890 OBC_ACPortTempBSensValid "Error state for the temperature sensor. E.g. damaged or short circuit at the temperature sensor in the inlet.";
+CM_ SG_ 890 OBC_ACPortTempAerror "sensor A temporature error";
+CM_ SG_ 890 OBC_ACPortTempBerror "sensor B temporature error";
+CM_ SG_ 890 OBC_DCVoltLowFault "Charger DC side undervoltage fault";
+CM_ SG_ 890 OBC_FaultLevel "no fault?this value means the OBC is normal. 
+Recoverable fault?OBC will down power and wait for the fault clear, and retry. 
+Unrecoverable fault?when OBC detect this fault,
+ OBC should stop output and power down,when the power is reduced, also need to send this signal";
+CM_ SG_ 890 OBC_DCVoltHighFault "Charger DC side overvoltage fault";
+CM_ SG_ 890 OBC_StartUpAllowed "OBC startup status";
+CM_ SG_ 890 OBC_CommunFault "OBC communication fault";
+CM_ SG_ 890 OBC_DCCurHighFault "Charger DC side over current fault";
+CM_ SG_ 890 OBC_ACVoltHighFault "Charger AC side overvoltage fault";
+CM_ SG_ 890 OBC_ACVoltLowFault "Charger AC side undervoltage fault";
+CM_ SG_ 890 OBC_NlineStatus "Whether AC side N line disconnect";
+CM_ SG_ 890 OBC_InputFrequencyStatus "Whether AC side frequency abnormal";
+CM_ SG_ 890 OBC_InputPhaseStatus "Whether AC side Lack of input phase";
+CM_ SG_ 890 OBC_InputOverCurrentstatus_R "PFC input over current between L1 and N";
+CM_ SG_ 890 OBC_InputOverCurrentstatus_S "PFC input over current between L2 and N";
+CM_ SG_ 890 OBC_InputOverCurrentstatus_T "PFC input over current between L3 and N";
+CM_ SG_ 890 OBC_PFCUnderVoltageError "VBUS undervoltage";
+CM_ SG_ 890 OBC_PFCOverVoltageError "VBUS over voltage";
+CM_ SG_ 890 OBC_OutputShortError "Output short";
+CM_ SG_ 890 POD_faultTemp "AC Charge port over temp";
+CM_ SG_ 890 OBC_PrimarySideOvertempStatus "Primary side overtemp,at primary side ,we have total three temporature check point, but we only need to check the maximum value error";
+CM_ SG_ 890 OBC_SecordarySideOvertempStatus "Secordary side overtemp";
+CM_ SG_ 890 OBC_ComFault1 "Microcontroller communication error with primary side";
+CM_ SG_ 890 OBC_ComFault2 "Microcontroller communication error with secordary side";
+CM_ SG_ 890 OBC_internalFault "OBC internal fault(internal error)";
+CM_ SG_ 890 OBC_PrimarySideTemp "This signal is sent to TMS,according to this signal, TCU request reduce the temporature of water,and we have total three temporature check point, but we only need to check the maximum value ";
+CM_ SG_ 890 OBC_SecondarySideTemp "This signal is sent to TMS,according to this signal, TCU request reduce the temporature of water.";
+CM_ SG_ 912 BMS_SysRegInsulationValue "BMS system insulation value";
+CM_ SG_ 912 BMS_InsulationDetectionStatus "BMS insulation detection status";
+CM_ SG_ 174 Checksum_AE "Checksum signal for frame";
+CM_ SG_ 174 MessageCounter_AE "Message counter signal for frame";
+CM_ SG_ 174 BMS_status "State of BMS";
+CM_ SG_ 174 BMS_BatStatus "State of battery";
+CM_ SG_ 174 BMS_PreCharge "State of BMS Precharge";
+CM_ SG_ 174 BMS_ChargeStatus "State of BMS Charge Mode";
+CM_ SG_ 174 BMS_RunHeatStatus "State of Heat state when car running";
+CM_ SG_ 174 BMS_ErrorLevel "BMS Error Level";
+CM_ SG_ 174 BMS_BalancingStatus "Cell balancing status";
+CM_ SG_ 174 BMS_SOH "BMS SOH";
+CM_ SG_ 174 BMS_HVinterlockState "HV interlock state";
+CM_ SG_ 175 BMS_BattVolt "the voltage of dclink from BMS side���ĸ�ߵ�ѹ";
+CM_ SG_ 175 BMS_BattCurr "the current of dclink from BMS side���ĸ�ߵ���";
+CM_ SG_ 175 Checksum_AF "Checksum signal for frame";
+CM_ SG_ 175 MessageCounter_AF "Message counter signal for frame";
+CM_ SG_ 665 BMS_PackVoltage "Pack Inside Volt";
+CM_ SG_ 665 BMS_LinkVoltage "Pack Outside Volt";
+CM_ SG_ 665 BMS_SOC "BMS Real SOC";
+CM_ SG_ 665 BMS_DisplaySOC "BMS Display SOC";
+CM_ SG_ 659 BMS_PosRelayStatus "State of  positive relay status";
+CM_ SG_ 659 BMS_PTCRelayStatus "the status of PTC relay from BMS side���PTC�̵���״̬";
+CM_ SG_ 659 BMS_NegRelayStatus "State of  negtive relay status";
+CM_ SG_ 659 BMS_PreRelayStatus "State of  precharge relay status";
+CM_ SG_ 659 BMS_StateRelay4 "State of  relay 4";
+CM_ SG_ 659 BMS_StateRelay5 "State of  relay 5";
+CM_ SG_ 659 BMS_StateRelay6 "State of  relay 6";
+CM_ SG_ 659 BMS_StateRelay7 "State of  relay 7";
+CM_ SG_ 659 BMS_StateRelay8 "State of  relay 8";
+CM_ SG_ 659 BMS_StateDI2 "State of DI 2";
+CM_ SG_ 659 BMS_StateDI3 "State of DI 3";
+CM_ SG_ 659 BMS_StateDI4 "State of DI 4";
+CM_ SG_ 659 BMS_StateDI5 "State of DI 5";
+CM_ SG_ 659 BMS_StateDI6 "State of DI 6";
+CM_ SG_ 659 BMS_StateDI7 "State of DI 7";
+CM_ SG_ 659 BMS_StateDI8 "State of DI 8";
+CM_ SG_ 661 BMS_RemChagTime "Remaining charging time prediction in minute";
+CM_ SG_ 661 BMS_MaxChagVoltage "Maximum allowable charging voltage";
+CM_ SG_ 661 BMS_AllowChagCurrent "Maximum allowable charging current";
+CM_ SG_ 662 BMS_FeedbackCurr "Maximum feed back charging  current(30S)";
+CM_ SG_ 662 BMS_DisChgCurr "Constant discharging  current";
+CM_ SG_ 1170 BMS_BatType "Battery type";
+CM_ SG_ 1170 BMS_BatSupName "Battery supplier name";
+CM_ SG_ 1170 BMS_CellNumbers "Sum of cell in pack";
+CM_ SG_ 1170 BMS_RatCapacity "Rated capacity of power battery system";
+CM_ SG_ 1170 BMS_RatEnergy "Nominal total energy of power battery";
+CM_ SG_ 1170 BMS_RatBatVoltage "Rated Voltage of power battery system";
+CM_ SG_ 1171 BMS_SingChgkwh "Single charged electric quantity (charger online)";
+CM_ SG_ 1171 BMS_SumChgkwh "Accumulated charged electric quantity ";
+CM_ SG_ 1171 BMS_BatChagSum "Sum of how many cycle for battery charged";
+CM_ SG_ 1172 BMS_SumDisChgkwh "Accumulated discharged electric quantity ";
+CM_ SG_ 666 BMS_MaxCellVoltage "The Maximal Cell Voltage";
+CM_ SG_ 666 BMS_MinCellVoltage "The Minimal Cell Voltage";
+CM_ SG_ 666 BMS_MaxCellVoltageModuleNO "Maximal Cell Voltage module NO";
+CM_ SG_ 666 BMS_MinCellVoltageModlueNO "Minimal Cell Voltage module NO";
+CM_ SG_ 666 BMS_MaxCellVoltageNO "The Maximal Cell Voltage NO";
+CM_ SG_ 666 BMS_MinCellVoltageNO "The Minimal Cell Voltage NO";
+CM_ SG_ 801 BMS_ThermometerProbes "Sum of Temperature Probe in PACK";
+CM_ SG_ 801 BMS_AverageCellTemp "Average battery cell temperature";
+CM_ SG_ 801 BMS_MaxCellTemp "Maximal Cell TemperatureInlet value";
+CM_ SG_ 801 BMS_MinCellTemp "Minimal  Cell TemperatureInlet value";
+CM_ SG_ 801 BMS_MaxCellTempModuleNO "Maximal Cell TemperatureInlet module NO";
+CM_ SG_ 801 BMS_MinCellTempModuleNO "Minimal  Cell TemperatureInlet module NO";
+CM_ SG_ 801 BMS_MaxCellTempNO "Maximal Cell TemperatureInlet  NO";
+CM_ SG_ 801 BMS_MinCellTempNO "Minimal  Cell TemperatureInlet  NO";
+CM_ SG_ 803 Checksum_5 "Checksum signal for frame";
+CM_ SG_ 803 MessageCounter_5 "Message counter signal for frame";
+CM_ SG_ 803 BMS_AllowCellTemperature "Maximum allowable charging temperature";
+CM_ SG_ 803 BMS_TargetBatteryMaxCellTemp "Target battery cell temperature";
+CM_ SG_ 803 BMS_TempInlet "Water inlet temperature";
+CM_ SG_ 803 BMS_Tempoutlet "Outlet water temperature";
+CM_ SG_ 803 BMS_FlowRate "Coolant flow rate";
+CM_ SG_ 803 BMS_HeatCommand "Heat command from BMS";
+CM_ SG_ 803 BMS_BalanceCommand "Balance command from BMS";
+CM_ SG_ 803 BMS_CoolCommand "Cool command from BMS";
+CM_ SG_ 897 BMS_BatCodeFrameNO "BatteryCodeNumber ";
+CM_ SG_ 897 BMS_BatCodeFrameLength "Length of battery code";
+CM_ SG_ 898 BMS_ErrorCellOverVolt "Cell voltage over limit";
+CM_ SG_ 898 BMS_ErrorCellUnderVolt "Cell voltage under limit";
+CM_ SG_ 898 BMS_ErrorCellHighTemp "Cell temperature over limit";
+CM_ SG_ 898 BMS_ErrorCellLowTemp "Cell temperature under limit";
+CM_ SG_ 898 BMS_ErrorBattOverVolt "Battery voltage over limit";
+CM_ SG_ 898 BMS_ErrorBattUnderVolt "Battery voltage under limit";
+CM_ SG_ 898 BMS_ErrorChaCurrentOver "Battery charge current over limit";
+CM_ SG_ 898 BMS_ErrorDisChaCurrentOver "Battery discharge current over limit";
+CM_ SG_ 898 BMS_ErrorBSUOffline "BSU offline";
+CM_ SG_ 898 BMS_ErrorLeakCurrent "Leakage current exceeds the limit";
+CM_ SG_ 898 BMS_ErrorCellVoltDiff "Cell��s voltage diffrence between maximal and minimal one is over limit";
+CM_ SG_ 898 BMS_ErrorCellTempDiff "Cell's temperature  diffrence between maximal and minimal one is over limit";
+CM_ SG_ 898 BMS_ErrorBatVolt "Battery error";
+CM_ SG_ 898 BMS_ErrorHallOffline "Hall offline";
+CM_ SG_ 898 BMS_ErrorCellVoltOffline "Cell voltage detector offline";
+CM_ SG_ 898 BMS_ErrorCellTempOffline "Cell temperature detector offline";
+CM_ SG_ 898 BMS_ErrorPreChaFailed "HV precharg failed";
+CM_ SG_ 898 BMS_ErrorRelay "Relay error";
+CM_ SG_ 898 BMS_ErrorBSUBalance "BSU balance fuction error";
+CM_ SG_ 898 BMS_ErrorIsolationSingleLow "The insulation resistance is too low.";
+CM_ SG_ 898 BMS_ErrorLowSOC "SOC under limit";
+CM_ SG_ 898 BMS_ErrorHighSoc "SOC over limit";
+CM_ SG_ 898 BMS_ErrorSoCJump_RM "SOC jump";
+CM_ SG_ 898 BMS_ErrorHVIL "HVIL offline";
+CM_ SG_ 898 BMS_ErrorEmergencyOffCrash "Crash signal";
+CM_ SG_ 898 BMS_ErrorSystemsMatch "BMS not matched alarm";
+CM_ SG_ 898 BMS_ErrorSmoke "Smoke alarm";
+CM_ SG_ 898 BMS_ErrorLeakDet "Leakage detection";
+CM_ SG_ 898 BMS_DTC "Fault code";
+CM_ SG_ 945 BMS_SoftVsesion "BMS software version";
+CM_ SG_ 945 BMS_HardVsesion "BMS hardware version";
+CM_ SG_ 945 BMS_BRMVersions "BMS versions for BRM";
+CM_ SG_ 945 BMS_ComVersion "BMS Communication Protocol Version ";
+CM_ SG_ 945 BMS_BatProRights "Battery property rights";
+CM_ SG_ 945 BMS_Life "BMS life signal";
+CM_ SG_ 946 BMS_BatProDatYear "Battery pack production date year";
+CM_ SG_ 946 BMS_BatProDatMonth "Battery pack production date month";
+CM_ SG_ 946 BMS_BatProDatDay "Battery pack production date day";
+CM_ SG_ 122 MCU_ActualTorque "the actual torque of motor���ʵʱ����";
+CM_ SG_ 122 MCU_UdcCurr "the actual voltage of udclinkʵʱֱ����ѹ";
+CM_ SG_ 122 MCU_IsCurr "the actual current ʵʱֱ�����������������";
+CM_ SG_ 122 MCU_ActualSpeed "the actual motor speed���ʵʱת��";
+CM_ SG_ 122 MessageCounter_7A "rolling counter";
+CM_ SG_ 122 MCU_ActTrqValid "���ʵ��Ť��ֵ��Ч��";
+CM_ SG_ 122 MCU_ActualSpeedValid "���ʵʱת����Ч��";
+CM_ SG_ 123 MCU_IGBTTempU "the temperature of U phase IGBT/ U��IGBT�¶�";
+CM_ SG_ 123 MCU_IGBTTempV "the temperature of V phase IGBT";
+CM_ SG_ 123 MCU_IGBTTempW "the temperature of W phase IGBT";
+CM_ SG_ 123 MCU_IGBTTempMax "the temperature of Max phase IGBT";
+CM_ SG_ 123 MCU_IGBTTempRiseU "the temperature rise of U phase IGBT/ U��IGBT����";
+CM_ SG_ 123 MCU_IGBTTempRiseV "the temperature rise of V phase IGBT";
+CM_ SG_ 123 MCU_IGBTTempRiseW "the temperature  rise of W phase IGBT";
+CM_ SG_ 123 MCU_IGBTTempRiseMax "the temperature rise of Max phase IGBT";
+CM_ SG_ 124 MCU_TempCurrCool "the temperature of coolant��ȴҺ�¶�";
+CM_ SG_ 124 MCU_TempCurrStr1 "the temperature of stator NTC1 ����¶�";
+CM_ SG_ 124 MCU_TempCurrStr2 "the temperature of stator NTC2";
+CM_ SG_ 124 MCU_TempCurrStr "the temperature of Max stator NTC�������¶�";
+CM_ SG_ 124 MCU_TempRiseCurrStr "the temperature of stator NTC1 �������";
+CM_ SG_ 124 MCU_TempStatus "The E-motor temperature state�¶�״̬";
+CM_ SG_ 125 MCU_OfsAl "the offset angle of motor���ƫ�ƽ�";
+CM_ SG_ 125 MCU_Isd "the actual d axle current of MCU/���D�����";
+CM_ SG_ 125 MCU_Isq "the actual q axle current of MCU";
+CM_ SG_ 125 MCU_bDmpCActv "the damping control enable flag of motor��������״̬";
+CM_ SG_ 125 MCU_stGateDrv "the gate drive status of MCU����״̬";
+CM_ SG_ 125 MCU_DmpCTrqCurr "the actual torque of motor without damping control compensationû�����Ჹ���ĵ��ʵʱ����";
+CM_ SG_ 125 MCU_VCUWorkMode "the actual running mode of motor����ģʽ";
+CM_ SG_ 709 MCU_bDernOvrIdc "derating from dclink current overֱ��ĸ�߹����޹�";
+CM_ SG_ 709 MCU_bDernOvrUdc "derating from dclink voltage overֱ��ĸ�߹�ѹ�޹�";
+CM_ SG_ 709 MCU_bDernStrTemp "derating from stator temperature over��������޹�";
+CM_ SG_ 709 MCU_bDernTrqMax "derating from troque max limitation�����������������޹�";
+CM_ SG_ 709 MCU_bDernTrqMin "derating from torque min limitation���������С�������޹�";
+CM_ SG_ 709 MCU_bDernUndrIdc "derating from dclink current underĸ��Ƿ���޹�";
+CM_ SG_ 709 MCU_bDernUndrUdc "derating from dclink voltage underĸ��Ƿѹ�޹�";
+CM_ SG_ 709 MCU_bReadyHv "high voltage ready flag��ѹԤ��״̬";
+CM_ SG_ 709 MCU_bDernTempIGBT "derating from igbt temperature over/ IGBT�����޹�";
+CM_ SG_ 709 MCU_bDernTempCool "derating from coolant temperature over��ȴˮ�����޹�";
+CM_ SG_ 709 MCU_bDernN "derating from speed over�����޹�";
+CM_ SG_ 709 MCU_TrqAbsMax "the maximum allowed torque of E-motor��������������";
+CM_ SG_ 709 MCU_TrqAbsMin "the minimum allowed torque of E-motor�����С��������";
+CM_ SG_ 709 MCU_stDischg "the discharge status�����ŵ�״̬";
+CM_ SG_ 709 MCU_UT15Curr "the actual voltage of Tl15��ѹ��Դʵʱ��ѹ";
+CM_ SG_ 710 MCU_Softwae_FaultBit "bit0��ĸ�ߵ�����������
+bit:1��ĸ�ߵ�����������
+bit2��ֱ��ĸ�߹�ѹ����
+bit3��ֱ��ĸ��Ƿѹ����
+bit4��ֱ��ĸ�߹�ѹ����
+bit5��ֱ��ĸ��Ƿѹ����
+bit6��������¾���
+bit7��������¹���
+bit8����������¾���
+bit9����������¹���
+bit10��������پ���
+bit11��������ٹ���
+bit12��MCIͨѶ���߹���
+bit13��MCU����У�����
+bit14��reverse
+bit15��reverse
+bit16��reverse
+bit18��reverse
+bit19��reverse";
+CM_ SG_ 710 MCU_Hardware_Fault "bit0�������Ӳ����������
+bit:1��CPLDӲ����ѹ����
+bit2���ż�������ԴӲ������
+bit3��CPLD���ع���
+bit4���ⲿ��ѹ��ѹ�쳣
+bit5���ڲ�оƬ��Դ����
+bit6����·��������
+bit7����оƬ���CPLD����
+bit8����ѹMCU������Դ��ѹ����
+bit9��reverse
+bit10��reverse
+bit11��reverse
+bit12��reverse
+bit13��reverse
+bit14��reverse
+bit15��reverse";
+CM_ SG_ 710 MCU_Sensor_Fault "bit0������¶ȴ�������������
+bit:1�����������������
+bit2��MCU�Լ����
+bit3��reverse
+bit4��reverse
+bit5��reverse
+bit6��reverse
+bit7��reverse";
+CM_ SG_ 710 MCU_CAN_Fault "bit0��CAN Bus off
+bit:1��reverse
+bit2��reverse
+bit3��reverse
+bit4��reverse
+bit5��reverse
+bit6��reverse
+bit7��reverse";
+CM_ SG_ 1178 MCU_CodeVer "the version of TC275 software code�����汾����";
+CM_ SG_ 1178 MCU_DataVer "the version of TC275 software calibration data�궨�����汾����";
+CM_ SG_ 1178 MCU_CpldVer "the version of CPLD software�����汾";
+CM_ SG_ 1178 MCU_HvMcuVer "the version of Hv Mcu software��ѹMCU�����汾";
+CM_ SG_ 1179 MCU_HwVer "the version of hardwareӲ���汾";
+CM_ SG_ 911 BCM_RLHSSolarDrvr "The left solar sensor measured
+������շ���ǿ��  ";
+CM_ SG_ 911 BCM_RLHSSolarPass "The right solar sensor measured
+�ұ����շ���ǿ��  ";
+CM_ SG_ 911 BCM_RLHSHumidSensorValue "This signal delivers information about air humid : from 0% to 100%
+����ʪ��
+��Чֵ0x1��ʼ
+Start up(��ʼֵ) 0x00
+Invalid(��Чֵ)0xFF";
+CM_ SG_ 911 BCM_RLHSTempSensorValue "This signal delivers information about  temperature in car 
+�����¶�
+��Чֵ0x1��ʼ
+Start up(��ʼֵ) 0x00
+Invalid(��Чֵ)0xFF";
+CM_ SG_ 911 BCM_RLHSTempDewPoint "¶��
+��Чֵ0x1��ʼ
+Start up(��ʼֵ) 0x00
+Invalid(��Чֵ)0x7FF";
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","J1939PG";
+BA_DEF_ BO_  "GenMsgStartDelayTime" INT 0 0;
+BA_DEF_ BO_  "GenMsgDelayTime" INT 0 0;
+BA_DEF_ BO_  "GenMsgNrOfRepetition" INT 0 0;
+BA_DEF_ BO_  "GenMsgCycleTimeFast" INT 0 0;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 0;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","IfActive","NoMsgSendType","NotUsed";
+BA_DEF_ SG_  "GenSigStartValue" INT 0 0;
+BA_DEF_ SG_  "GenSigInactiveValue" INT 0 0;
+BA_DEF_ SG_  "GenSigCycleTimeActive" INT 0 0;
+BA_DEF_ SG_  "GenSigCycleTime" INT 0 0;
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed";
+BA_DEF_  "Baudrate" INT 0 1000000;
+BA_DEF_  "BusType" STRING ;
+BA_DEF_  "NmType" STRING ;
+BA_DEF_  "Manufacturer" STRING ;
+BA_DEF_ BO_  "TpTxIndex" INT 0 255;
+BA_DEF_ BU_  "NodeLayerModules" STRING ;
+BA_DEF_ BU_  "NmStationAddress" HEX 0 255;
+BA_DEF_ BU_  "NmNode" ENUM  "no","yes";
+BA_DEF_ BO_  "NmMessage" ENUM  "no","yes";
+BA_DEF_  "NmAsrWaitBusSleepTime" INT 0 65535;
+BA_DEF_  "NmAsrTimeoutTime" INT 1 65535;
+BA_DEF_  "NmAsrRepeatMessageTime" INT 0 65535;
+BA_DEF_ BU_  "NmAsrNodeIdentifier" HEX 0 255;
+BA_DEF_ BU_  "NmAsrNode" ENUM  "no","yes";
+BA_DEF_  "NmAsrMessageCount" INT 1 256;
+BA_DEF_ BO_  "NmAsrMessage" ENUM  "no","yes";
+BA_DEF_ BU_  "NmAsrCanMsgReducedTime" INT 1 65535;
+BA_DEF_  "NmAsrCanMsgCycleTime" INT 1 65535;
+BA_DEF_ BU_  "NmAsrCanMsgCycleOffset" INT 0 65535;
+BA_DEF_  "NmAsrBaseAddress" HEX 0 2047;
+BA_DEF_ BU_  "ILUsed" ENUM  "no","yes";
+BA_DEF_  "ILTxTimeout" INT 0 65535;
+BA_DEF_ SG_  "GenSigTimeoutValue" INT 0 65535;
+BA_DEF_ SG_  "GenSigTimeoutTime" INT 0 65535;
+BA_DEF_ BO_  "GenMsgILSupport" ENUM  "no","yes";
+BA_DEF_ BO_  "GenMsgFastOnStart" INT 0 65535;
+BA_DEF_ BO_  "DiagUudtResponse" ENUM  "false","true";
+BA_DEF_ BO_  "DiagUudResponse" ENUM  "False","True";
+BA_DEF_ BO_  "DiagState" ENUM  "no","yes";
+BA_DEF_ BO_  "DiagResponse" ENUM  "no","yes";
+BA_DEF_ BO_  "DiagRequest" ENUM  "no","yes";
+BA_DEF_  "DBName" STRING ;
+BA_DEF_DEF_  "GenMsgStartDelayTime" 0;
+BA_DEF_DEF_  "GenMsgDelayTime" 0;
+BA_DEF_DEF_  "GenMsgNrOfRepetition" 0;
+BA_DEF_DEF_  "GenMsgCycleTimeFast" 0;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "GenMsgSendType" "Cyclic";
+BA_DEF_DEF_  "GenSigStartValue" 0;
+BA_DEF_DEF_  "GenSigInactiveValue" 0;
+BA_DEF_DEF_  "GenSigCycleTimeActive" 0;
+BA_DEF_DEF_  "GenSigCycleTime" 0;
+BA_DEF_DEF_  "GenSigSendType" "Cyclic";
+BA_DEF_DEF_  "Baudrate" 500000;
+BA_DEF_DEF_  "BusType" "";
+BA_DEF_DEF_  "NmType" "";
+BA_DEF_DEF_  "Manufacturer" "Vector";
+BA_DEF_DEF_  "TpTxIndex" 0;
+BA_DEF_DEF_  "NodeLayerModules" " ";
+BA_DEF_DEF_  "NmStationAddress" 0;
+BA_DEF_DEF_  "NmNode" "no";
+BA_DEF_DEF_  "NmMessage" "no";
+BA_DEF_DEF_  "NmAsrWaitBusSleepTime" 1500;
+BA_DEF_DEF_  "NmAsrTimeoutTime" 2000;
+BA_DEF_DEF_  "NmAsrRepeatMessageTime" 3200;
+BA_DEF_DEF_  "NmAsrNodeIdentifier" 50;
+BA_DEF_DEF_  "NmAsrNode" "no";
+BA_DEF_DEF_  "NmAsrMessageCount" 128;
+BA_DEF_DEF_  "NmAsrMessage" "no";
+BA_DEF_DEF_  "NmAsrCanMsgReducedTime" 320;
+BA_DEF_DEF_  "NmAsrCanMsgCycleTime" 640;
+BA_DEF_DEF_  "NmAsrCanMsgCycleOffset" 0;
+BA_DEF_DEF_  "NmAsrBaseAddress" 1280;
+BA_DEF_DEF_  "ILUsed" "no";
+BA_DEF_DEF_  "ILTxTimeout" 0;
+BA_DEF_DEF_  "GenSigTimeoutValue" 0;
+BA_DEF_DEF_  "GenSigTimeoutTime" 0;
+BA_DEF_DEF_  "GenMsgILSupport" "no";
+BA_DEF_DEF_  "GenMsgFastOnStart" 0;
+BA_DEF_DEF_  "DiagUudtResponse" "false";
+BA_DEF_DEF_  "DiagUudResponse" "False";
+BA_DEF_DEF_  "DiagState" "no";
+BA_DEF_DEF_  "DiagResponse" "no";
+BA_DEF_DEF_  "DiagRequest" "no";
+BA_DEF_DEF_  "DBName" "";
+BA_ "Manufacturer" "Vector";
+BA_ "NmType" "NmAsr";
+BA_ "BusType" "CAN";
+BA_ "Baudrate" 500000;
+BA_ "NmAsrWaitBusSleepTime" 2000;
+BA_ "DBName" "KAMA_FP_EPT_0615";
+BA_ "GenMsgSendType" BO_ 677 0;
+BA_ "GenMsgCycleTime" BO_ 677 100;
+BA_ "GenMsgSendType" BO_ 704 0;
+BA_ "GenMsgCycleTime" BO_ 704 100;
+BA_ "GenMsgSendType" BO_ 705 0;
+BA_ "GenMsgCycleTime" BO_ 705 100;
+BA_ "GenMsgSendType" BO_ 706 0;
+BA_ "GenMsgCycleTime" BO_ 706 100;
+BA_ "GenMsgSendType" BO_ 754 0;
+BA_ "GenMsgCycleTime" BO_ 754 100;
+BA_ "GenMsgSendType" BO_ 714 0;
+BA_ "GenMsgCycleTime" BO_ 714 100;
+BA_ "GenMsgSendType" BO_ 715 0;
+BA_ "GenMsgCycleTime" BO_ 715 100;
+BA_ "GenMsgSendType" BO_ 70 0;
+BA_ "GenMsgCycleTime" BO_ 70 10;
+BA_ "GenMsgSendType" BO_ 71 0;
+BA_ "GenMsgCycleTime" BO_ 71 20;
+BA_ "GenMsgSendType" BO_ 768 0;
+BA_ "GenMsgCycleTime" BO_ 768 10;
+BA_ "GenMsgSendType" BO_ 627 0;
+BA_ "GenMsgCycleTime" BO_ 627 100;
+BA_ "GenMsgSendType" BO_ 629 0;
+BA_ "GenMsgCycleTime" BO_ 629 50;
+BA_ "GenMsgSendType" BO_ 628 0;
+BA_ "GenMsgCycleTime" BO_ 628 100;
+BA_ "GenMsgSendType" BO_ 161 0;
+BA_ "GenMsgCycleTime" BO_ 161 20;
+BA_ "GenMsgSendType" BO_ 630 0;
+BA_ "GenMsgCycleTime" BO_ 630 100;
+BA_ "GenMsgSendType" BO_ 880 0;
+BA_ "GenMsgCycleTime" BO_ 880 100;
+BA_ "GenMsgSendType" BO_ 881 0;
+BA_ "GenMsgCycleTime" BO_ 881 100;
+BA_ "GenMsgSendType" BO_ 885 0;
+BA_ "GenMsgCycleTime" BO_ 885 100;
+BA_ "GenMsgSendType" BO_ 886 0;
+BA_ "GenMsgCycleTime" BO_ 886 200;
+BA_ "GenMsgSendType" BO_ 887 0;
+BA_ "GenMsgCycleTime" BO_ 887 100;
+BA_ "GenMsgSendType" BO_ 888 0;
+BA_ "GenMsgCycleTime" BO_ 888 100;
+BA_ "GenMsgSendType" BO_ 889 0;
+BA_ "GenMsgCycleTime" BO_ 889 50;
+BA_ "GenMsgSendType" BO_ 890 0;
+BA_ "GenMsgCycleTime" BO_ 890 200;
+BA_ "GenMsgSendType" BO_ 912 0;
+BA_ "GenMsgCycleTime" BO_ 912 1000;
+BA_ "GenMsgSendType" BO_ 174 0;
+BA_ "GenMsgCycleTime" BO_ 174 20;
+BA_ "GenMsgSendType" BO_ 175 0;
+BA_ "GenMsgCycleTime" BO_ 175 20;
+BA_ "GenMsgSendType" BO_ 665 0;
+BA_ "GenMsgCycleTime" BO_ 665 100;
+BA_ "GenMsgSendType" BO_ 659 0;
+BA_ "GenMsgCycleTime" BO_ 659 100;
+BA_ "GenMsgSendType" BO_ 660 0;
+BA_ "GenMsgCycleTime" BO_ 660 100;
+BA_ "GenMsgSendType" BO_ 661 0;
+BA_ "GenMsgCycleTime" BO_ 661 100;
+BA_ "GenMsgSendType" BO_ 662 0;
+BA_ "GenMsgCycleTime" BO_ 662 100;
+BA_ "GenMsgSendType" BO_ 1170 0;
+BA_ "GenMsgCycleTime" BO_ 1170 1000;
+BA_ "GenMsgSendType" BO_ 1171 0;
+BA_ "GenMsgCycleTime" BO_ 1171 1000;
+BA_ "GenMsgSendType" BO_ 1172 0;
+BA_ "GenMsgCycleTime" BO_ 1172 1000;
+BA_ "GenMsgSendType" BO_ 666 0;
+BA_ "GenMsgCycleTime" BO_ 666 100;
+BA_ "GenMsgSendType" BO_ 801 0;
+BA_ "GenMsgCycleTime" BO_ 801 100;
+BA_ "GenMsgSendType" BO_ 803 0;
+BA_ "GenMsgCycleTime" BO_ 803 200;
+BA_ "GenMsgSendType" BO_ 897 0;
+BA_ "GenMsgCycleTime" BO_ 897 1000;
+BA_ "GenMsgSendType" BO_ 898 0;
+BA_ "GenMsgCycleTime" BO_ 898 200;
+BA_ "GenMsgSendType" BO_ 945 0;
+BA_ "GenMsgCycleTime" BO_ 945 1000;
+BA_ "GenMsgSendType" BO_ 946 0;
+BA_ "GenMsgCycleTime" BO_ 946 1000;
+BA_ "GenMsgSendType" BO_ 122 0;
+BA_ "GenMsgCycleTime" BO_ 122 10;
+BA_ "GenMsgSendType" BO_ 123 0;
+BA_ "GenMsgCycleTime" BO_ 123 500;
+BA_ "GenMsgSendType" BO_ 124 0;
+BA_ "GenMsgCycleTime" BO_ 124 500;
+BA_ "GenMsgSendType" BO_ 125 0;
+BA_ "GenMsgCycleTime" BO_ 125 20;
+BA_ "GenMsgSendType" BO_ 126 0;
+BA_ "GenMsgCycleTime" BO_ 126 500;
+BA_ "GenMsgSendType" BO_ 127 0;
+BA_ "GenMsgCycleTime" BO_ 127 20;
+BA_ "GenMsgSendType" BO_ 128 0;
+BA_ "GenMsgCycleTime" BO_ 128 500;
+BA_ "GenMsgSendType" BO_ 709 0;
+BA_ "GenMsgCycleTime" BO_ 709 100;
+BA_ "GenMsgSendType" BO_ 710 0;
+BA_ "GenMsgCycleTime" BO_ 710 100;
+BA_ "GenMsgSendType" BO_ 1178 0;
+BA_ "GenMsgCycleTime" BO_ 1178 1000;
+BA_ "GenMsgSendType" BO_ 1179 0;
+BA_ "GenMsgCycleTime" BO_ 1179 1000;
+BA_ "GenMsgSendType" BO_ 911 0;
+BA_ "GenMsgCycleTime" BO_ 911 100;
+BA_ "GenSigStartValue" SG_ 677 MMI_AC_OnKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_MaxAcKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_FrontDefrostKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_FreshReciKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_AcKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_BlowerFanLevel 15;
+BA_ "GenSigStartValue" SG_ 677 MMI_AirDistributionModeReq 7;
+BA_ "GenSigStartValue" SG_ 677 MMI_AirConditionerPowerKey 0;
+BA_ "GenSigStartValue" SG_ 677 MMI_LeftSetTemp 0;
+BA_ "GenSigStartValue" SG_ 704 Checksum_2C0 0;
+BA_ "GenSigStartValue" SG_ 704 MessageCounter_2C0 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_TMSState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_TMSFaultLevel 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HvOnReq 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HVCHHighVoltage 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HVCHHVDCCurrent 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_TMSTotoalPwrReq 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_BattTMState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HVPwrState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HVACACState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_EVCompState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_APTCState 0;
+BA_ "GenSigStartValue" SG_ 704 TCU_HVCHState 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_APTCLeftCmd 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_APTCRightCmd 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_APTC1Enable 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_CompEnable 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_CompTargetSpeed 0;
+BA_ "GenSigStartValue" SG_ 705 TCU_CompMaxAllowPwrCmsp 0;
+BA_ "GenSigStartValue" SG_ 705 MessageCounter_2C1 0;
+BA_ "GenSigStartValue" SG_ 705 Checksum_2C1 0;
+BA_ "GenSigStartValue" SG_ 706 TCU_AmbientTemperature 255;
+BA_ "GenSigStartValue" SG_ 754 AC_MaxAcState 0;
+BA_ "GenSigStartValue" SG_ 754 AC_FrontDefrostState 0;
+BA_ "GenSigStartValue" SG_ 754 AC_IntakeAirState 0;
+BA_ "GenSigStartValue" SG_ 754 AC_BlowerLevel 0;
+BA_ "GenSigStartValue" SG_ 754 AC_AirDistributionMode 0;
+BA_ "GenSigStartValue" SG_ 754 AC_OnState 0;
+BA_ "GenSigStartValue" SG_ 754 AC_LeftSetTemperature 10;
+BA_ "GenSigStartValue" SG_ 714 APTC_HVPowerUpReq 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_HeatingFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_DriveFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_LostCommuFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_IGBTFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_LeftCoreTemp 40;
+BA_ "GenSigStartValue" SG_ 714 APTC_RightCoreTemp 40;
+BA_ "GenSigStartValue" SG_ 714 APTC_HVBusVoltage 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_PowerConsumption 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_Core1TempSensorFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 714 APTC_Core2TempSensorFaltStatus 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_OverPwrDropFreqError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_OverCurDropFreqError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CommunicationError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_StandByUnderVolError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_StandByOverVolError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_UnderVoltageError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_OverVoltageError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_OverCurrentError 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompDeviceInternTempError 40;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlSpdValid 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlCnsmpCurValid 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlPwrCnsmpValid 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlSpd 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlPwrCnsmp 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompActlCnsmpCur 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_ActlOprtMode 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_FailStatus 0;
+BA_ "GenSigStartValue" SG_ 715 EVCOM_CompDeratingOprtStatus 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_KL15On 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_MCUDesiredTorque 1023;
+BA_ "GenSigStartValue" SG_ 70 VCU_MCUSurgeDamperState 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_BrakepedalStatus 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_MCURequestedState 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_TCSActive 0;
+BA_ "GenSigStartValue" SG_ 70 VCU_ActualGear 0;
+BA_ "GenSigStartValue" SG_ 70 MessageCounter_046 0;
+BA_ "GenSigStartValue" SG_ 70 Checksum_046 0;
+BA_ "GenSigStartValue" SG_ 71 VCU_MinTorqueLimit 1023;
+BA_ "GenSigStartValue" SG_ 71 VCU_MaxTorqueGradient 0;
+BA_ "GenSigStartValue" SG_ 71 VCU_MaxTorqueLimit 1023;
+BA_ "GenSigStartValue" SG_ 71 VCU_TrqThresholdDampgCtl 0;
+BA_ "GenSigStartValue" SG_ 71 MessageCounter_047 0;
+BA_ "GenSigStartValue" SG_ 71 Checksum_047 0;
+BA_ "GenSigStartValue" SG_ 768 VCU_IdCommand 3200;
+BA_ "GenSigStartValue" SG_ 768 VCU_IqCommand 3200;
+BA_ "GenSigStartValue" SG_ 768 VCU_CurrentCommandEnable 0;
+BA_ "GenSigStartValue" SG_ 627 Checksum_273 0;
+BA_ "GenSigStartValue" SG_ 627 MessageCounter_273 0;
+BA_ "GenSigStartValue" SG_ 627 VCU_VoltageDemandLV 0;
+BA_ "GenSigStartValue" SG_ 627 VCU_ModeRequestDCDC 0;
+BA_ "GenSigStartValue" SG_ 629 VCU_Enable_DC_Relay 0;
+BA_ "GenSigStartValue" SG_ 628 Checksum_274 0;
+BA_ "GenSigStartValue" SG_ 628 MessageCounter_274 0;
+BA_ "GenSigStartValue" SG_ 628 VCU_OBC_Control_of_S2_SW 0;
+BA_ "GenSigStartValue" SG_ 628 VCU_OBC_Control_of_em_lock 0;
+BA_ "GenSigStartValue" SG_ 628 VCU_EnableOBC 0;
+BA_ "GenSigStartValue" SG_ 628 VCU_OBC_ChargeCurrentCommand 0;
+BA_ "GenSigStartValue" SG_ 161 Checksum_0A1 0;
+BA_ "GenSigStartValue" SG_ 161 MessageCounter_0A1 0;
+BA_ "GenSigStartValue" SG_ 161 VCU_RequestedModeBMS 0;
+BA_ "GenSigStartValue" SG_ 161 VCU_IsoMeasurementSwitch 0;
+BA_ "GenSigStartValue" SG_ 161 VCU_HVStatus 0;
+BA_ "GenSigStartValue" SG_ 161 VCU_Chargestatus 0;
+BA_ "GenSigStartValue" SG_ 630 VCU_TCUPowerAllowed 0;
+BA_ "GenSigStartValue" SG_ 630 VCU_RequestedModeTCU 0;
+BA_ "GenSigStartValue" SG_ 880 POD_DCFCCurrent 0;
+BA_ "GenSigStartValue" SG_ 880 POD_DCFCVoltage 0;
+BA_ "GenSigStartValue" SG_ 880 POD_Temperature 255;
+BA_ "GenSigStartValue" SG_ 880 POD_DCInletTempA 255;
+BA_ "GenSigStartValue" SG_ 880 POD_DCInletTempB 255;
+BA_ "GenSigStartValue" SG_ 881 POD_TempSensor1Fault 0;
+BA_ "GenSigStartValue" SG_ 881 POD_DCPortInletTempBValid 0;
+BA_ "GenSigStartValue" SG_ 881 POD_DCPortInletTempAValid 0;
+BA_ "GenSigStartValue" SG_ 881 POD_DCPosRelayState 0;
+BA_ "GenSigStartValue" SG_ 881 POD_DCNegRelayState 0;
+BA_ "GenSigStartValue" SG_ 885 Checksum_375 0;
+BA_ "GenSigStartValue" SG_ 885 MessageCounter_375 0;
+BA_ "GenSigStartValue" SG_ 885 DCDC_HVInputVoltage 0;
+BA_ "GenSigStartValue" SG_ 885 DCDC_LVOutputCurrent 0;
+BA_ "GenSigStartValue" SG_ 885 DCDC_WorkMode 0;
+BA_ "GenSigStartValue" SG_ 885 DCDC_HVInputCurrent 0;
+BA_ "GenSigStartValue" SG_ 885 DCDC_LVOutputVoltage 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_FaultStatus 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputCurrentHighFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_InputVoltHighFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_InputVoltLowFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputVoltHighFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputVoltLowFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputSOGFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_PrimarySideOvertempStatus 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_SecordarySideOvertempStatus 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OBCTempHighFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputCurrentSensorFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OutputTempSensorFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_ComFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_StopFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_InternalFault 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_OBC_CANBusoff 0;
+BA_ "GenSigStartValue" SG_ 886 OBC_DCDC_KL30Error 0;
+BA_ "GenSigStartValue" SG_ 886 DCDC_SecondarySideTemp 255;
+BA_ "GenSigStartValue" SG_ 887 OBC_InputACCurrent 0;
+BA_ "GenSigStartValue" SG_ 887 OBC_ChargeStatus 0;
+BA_ "GenSigStartValue" SG_ 887 OBC_InputACVoltage 0;
+BA_ "GenSigStartValue" SG_ 887 OBC_OutputDCChargeVoltage 0;
+BA_ "GenSigStartValue" SG_ 887 OBC_OBCMaxPermOutpCrrt 0;
+BA_ "GenSigStartValue" SG_ 888 OBC_ChrgOutpPwrAvl 0;
+BA_ "GenSigStartValue" SG_ 888 OBC_OutputDCChargeCurrent 0;
+BA_ "GenSigStartValue" SG_ 888 OBC_ACPortTempA 255;
+BA_ "GenSigStartValue" SG_ 888 OBC_ACPortTempB 255;
+BA_ "GenSigStartValue" SG_ 889 OBC_CPCurrentLimit 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_CCStatus 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_CPStatus 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_CCCurrentLimit 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_CPFrequency 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_CPDuty 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_EMLockState 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_ChargCapacibility 0;
+BA_ "GenSigStartValue" SG_ 889 OBC_S2State 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACPortTempASensValid 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACPortTempBSensValid 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACPortTempAerror 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACPortTempBerror 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_DCVoltLowFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_FaultLevel 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_DCVoltHighFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_StartUpAllowed 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_CommunFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_DCCurHighFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACVoltHighFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ACVoltLowFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_NlineStatus 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_InputFrequencyStatus 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_InputPhaseStatus 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_InputOverCurrentstatus_R 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_InputOverCurrentstatus_S 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_InputOverCurrentstatus_T 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_PFCUnderVoltageError 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_PFCOverVoltageError 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_OutputShortError 0;
+BA_ "GenSigStartValue" SG_ 890 POD_faultTemp 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_PrimarySideOvertempStatus 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_SecordarySideOvertempStatus 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ComFault1 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_ComFault2 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_internalFault 0;
+BA_ "GenSigStartValue" SG_ 890 OBC_PrimarySideTemp 40;
+BA_ "GenSigStartValue" SG_ 890 OBC_SecondarySideTemp 40;
+BA_ "GenSigStartValue" SG_ 912 BMS_SysRegInsulationValue 0;
+BA_ "GenSigStartValue" SG_ 912 BMS_InsulationDetectionStatus 0;
+BA_ "GenSigStartValue" SG_ 174 Checksum_AE 0;
+BA_ "GenSigStartValue" SG_ 174 MessageCounter_AE 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_status 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_BatStatus 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_PreCharge 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_ChargeStatus 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_RunHeatStatus 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_ErrorLevel 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_BalancingStatus 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_SOH 0;
+BA_ "GenSigStartValue" SG_ 174 BMS_HVinterlockState 0;
+BA_ "GenSigStartValue" SG_ 175 BMS_BattVolt 0;
+BA_ "GenSigStartValue" SG_ 175 BMS_BattCurr 10240;
+BA_ "GenSigStartValue" SG_ 175 Checksum_AF 0;
+BA_ "GenSigStartValue" SG_ 175 MessageCounter_AF 0;
+BA_ "GenSigStartValue" SG_ 665 BMS_PackVoltage 0;
+BA_ "GenSigStartValue" SG_ 665 BMS_LinkVoltage 0;
+BA_ "GenSigStartValue" SG_ 665 BMS_SOC 55000;
+BA_ "GenSigStartValue" SG_ 665 BMS_DisplaySOC 55000;
+BA_ "GenSigStartValue" SG_ 659 BMS_PosRelayStatus 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_PTCRelayStatus 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_NegRelayStatus 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_PreRelayStatus 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateRelay4 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateRelay5 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateRelay6 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateRelay7 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateRelay8 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI2 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI3 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI4 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI5 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI6 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI7 0;
+BA_ "GenSigStartValue" SG_ 659 BMS_StateDI8 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_ChrgDcChrgnReq 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_DCChgMode 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortAchiveSingleVolt 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortAchiveTotalVolt 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortFaultBMSTemp 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortFaultBatteryTemp 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortErrorCurrent 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortAchivesetValue 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_AbortErrorVoltage 0;
+BA_ "GenSigStartValue" SG_ 660 BMS_ChagComplete 0;
+BA_ "GenSigStartValue" SG_ 661 BMS_RemChagTime 0;
+BA_ "GenSigStartValue" SG_ 661 BMS_MaxChagVoltage 0;
+BA_ "GenSigStartValue" SG_ 661 BMS_AllowChagCurrent 10000;
+BA_ "GenSigStartValue" SG_ 662 BMS_FeedbackCurr 10000;
+BA_ "GenSigStartValue" SG_ 662 BMS_DisChgCurr 10000;
+BA_ "GenSigStartValue" SG_ 1170 BMS_BatType 0;
+BA_ "GenSigStartValue" SG_ 1170 BMS_BatSupName 0;
+BA_ "GenSigStartValue" SG_ 1170 BMS_CellNumbers 0;
+BA_ "GenSigStartValue" SG_ 1170 BMS_RatCapacity 0;
+BA_ "GenSigStartValue" SG_ 1170 BMS_RatEnergy 0;
+BA_ "GenSigStartValue" SG_ 1170 BMS_RatBatVoltage 0;
+BA_ "GenSigStartValue" SG_ 1171 BMS_SingChgkwh 0;
+BA_ "GenSigStartValue" SG_ 1171 BMS_SumChgkwh 0;
+BA_ "GenSigStartValue" SG_ 1171 BMS_BatChagSum 0;
+BA_ "GenSigStartValue" SG_ 1172 BMS_SumDisChgkwh 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MaxCellVoltage 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MinCellVoltage 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MaxCellVoltageModuleNO 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MinCellVoltageModlueNO 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MaxCellVoltageNO 0;
+BA_ "GenSigStartValue" SG_ 666 BMS_MinCellVoltageNO 0;
+BA_ "GenSigStartValue" SG_ 801 BMS_ThermometerProbes 0;
+BA_ "GenSigStartValue" SG_ 801 BMS_AverageCellTemp 255;
+BA_ "GenSigStartValue" SG_ 801 BMS_MaxCellTemp 255;
+BA_ "GenSigStartValue" SG_ 801 BMS_MinCellTemp 255;
+BA_ "GenSigStartValue" SG_ 801 BMS_MaxCellTempModuleNO 0;
+BA_ "GenSigStartValue" SG_ 801 BMS_MinCellTempModuleNO 0;
+BA_ "GenSigStartValue" SG_ 801 BMS_MaxCellTempNO 0;
+BA_ "GenSigStartValue" SG_ 801 BMS_MinCellTempNO 0;
+BA_ "GenSigStartValue" SG_ 803 Checksum_5 0;
+BA_ "GenSigStartValue" SG_ 803 MessageCounter_5 0;
+BA_ "GenSigStartValue" SG_ 803 BMS_AllowCellTemperature 255;
+BA_ "GenSigStartValue" SG_ 803 BMS_TargetBatteryMaxCellTemp 255;
+BA_ "GenSigStartValue" SG_ 803 BMS_TempInlet 255;
+BA_ "GenSigStartValue" SG_ 803 BMS_Tempoutlet 255;
+BA_ "GenSigStartValue" SG_ 803 BMS_FlowRate 255;
+BA_ "GenSigStartValue" SG_ 803 BMS_HeatCommand 0;
+BA_ "GenSigStartValue" SG_ 803 BMS_BalanceCommand 0;
+BA_ "GenSigStartValue" SG_ 803 BMS_CoolCommand 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCodeFrameNO 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCodeFrameLength 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode1 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode2 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode3 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode4 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode5 0;
+BA_ "GenSigStartValue" SG_ 897 BMS_BatCode6 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellOverVolt 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellUnderVolt 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellHighTemp 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellLowTemp 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorBattOverVolt 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorBattUnderVolt 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorChaCurrentOver 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorDisChaCurrentOver 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorBSUOffline 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorLeakCurrent 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellVoltDiff 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellTempDiff 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorBatVolt 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorHallOffline 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellVoltOffline 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorCellTempOffline 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorPreChaFailed 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorRelay 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorBSUBalance 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorIsolationSingleLow 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorLowSOC 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorHighSoc 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorSoCJump_RM 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorHVIL 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorEmergencyOffCrash 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorSystemsMatch 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorSmoke 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ErrorLeakDet 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_ThermalRunawayFault 0;
+BA_ "GenSigStartValue" SG_ 898 BMS_DTC 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_SoftVsesion 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_HardVsesion 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_BRMVersions 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_ComVersion 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_BatProRights 0;
+BA_ "GenSigStartValue" SG_ 945 BMS_Life 0;
+BA_ "GenSigStartValue" SG_ 946 BMS_BatProDatYear -1985;
+BA_ "GenSigStartValue" SG_ 946 BMS_BatProDatMonth 0;
+BA_ "GenSigStartValue" SG_ 946 BMS_BatProDatDay 0;
+BA_ "GenSigStartValue" SG_ 122 MCU_ActualTorque 1024;
+BA_ "GenSigStartValue" SG_ 122 MCU_UdcCurr 0;
+BA_ "GenSigStartValue" SG_ 122 MCU_IsCurr 1024;
+BA_ "GenSigStartValue" SG_ 122 MCU_ActualSpeed 32768;
+BA_ "GenSigStartValue" SG_ 122 MessageCounter_7A 0;
+BA_ "GenSigStartValue" SG_ 122 MCU_ActTrqValid 0;
+BA_ "GenSigStartValue" SG_ 122 MCU_ActualSpeedValid 0;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempU 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempV 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempW 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempMax 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempRiseU 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempRiseV 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempRiseW 255;
+BA_ "GenSigStartValue" SG_ 123 MCU_IGBTTempRiseMax 255;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempCurrCool 255;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempCurrStr1 255;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempCurrStr2 255;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempCurrStr 255;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempRiseCurrStr 0;
+BA_ "GenSigStartValue" SG_ 124 MCU_TempStatus 0;
+BA_ "GenSigStartValue" SG_ 125 MCU_OfsAl 0;
+BA_ "GenSigStartValue" SG_ 125 MCU_Isd 2047;
+BA_ "GenSigStartValue" SG_ 125 MCU_Isq 2047;
+BA_ "GenSigStartValue" SG_ 125 MCU_bDmpCActv 0;
+BA_ "GenSigStartValue" SG_ 125 MCU_stGateDrv 0;
+BA_ "GenSigStartValue" SG_ 125 MCU_DmpCTrqCurr 125;
+BA_ "GenSigStartValue" SG_ 125 MCU_VCUWorkMode 0;
+BA_ "GenSigStartValue" SG_ 126 Ud 0;
+BA_ "GenSigStartValue" SG_ 126 Uq 0;
+BA_ "GenSigStartValue" SG_ 126 Id 0;
+BA_ "GenSigStartValue" SG_ 126 Iq 0;
+BA_ "GenSigStartValue" SG_ 127 ZVTimeStamp 0;
+BA_ "GenSigStartValue" SG_ 127 ZVTHetha 0;
+BA_ "GenSigStartValue" SG_ 128 ZVTemperature 0;
+BA_ "GenSigStartValue" SG_ 128 ZVRs 0;
+BA_ "GenSigStartValue" SG_ 128 ZVFlux 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernOvrIdc 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernOvrUdc 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernStrTemp 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernTrqMax 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernTrqMin 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernUndrIdc 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernUndrUdc 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bReadyHv 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernTempIGBT 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernTempCool 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_bDernN 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_TrqAbsMax 1024;
+BA_ "GenSigStartValue" SG_ 709 MCU_TrqAbsMin 1024;
+BA_ "GenSigStartValue" SG_ 709 MCU_stDischg 0;
+BA_ "GenSigStartValue" SG_ 709 MCU_UT15Curr 0;
+BA_ "GenSigStartValue" SG_ 710 MCU_FailCode1 0;
+BA_ "GenSigStartValue" SG_ 710 MCU_Softwae_FaultBit 0;
+BA_ "GenSigStartValue" SG_ 710 MCU_Hardware_Fault 0;
+BA_ "GenSigStartValue" SG_ 710 MCU_Sensor_Fault 0;
+BA_ "GenSigStartValue" SG_ 710 MCU_CAN_Fault 0;
+BA_ "GenSigStartValue" SG_ 1178 MCU_CodeVer 0;
+BA_ "GenSigStartValue" SG_ 1178 MCU_DataVer 0;
+BA_ "GenSigStartValue" SG_ 1178 MCU_CpldVer 0;
+BA_ "GenSigStartValue" SG_ 1178 MCU_HvMcuVer 0;
+BA_ "GenSigStartValue" SG_ 1179 MCU_HwVer 0;
+BA_ "GenSigStartValue" SG_ 911 BCM_RLHSSolarDrvr 0;
+BA_ "GenSigStartValue" SG_ 911 BCM_RLHSSolarPass 0;
+BA_ "GenSigStartValue" SG_ 911 BCM_RLHSHumidSensorValue 0;
+BA_ "GenSigStartValue" SG_ 911 BCM_RLHSTempSensorValue 80;
+BA_ "GenSigStartValue" SG_ 911 BCM_RLHSTempDewPoint 400;
+VAL_ 677 MMI_AC_OnKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_MaxAcKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_FrontDefrostKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_FreshReciKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_AcKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_BlowerFanLevel 15 " Not set" 8 "Blower Level8" 7 "Blower Level7" 6 "Blower Level6" 5 "Blower Level5" 4 "Blower Level4" 3 "Blower Level3" 2 "Blower Level2" 1 "Blower Level1" 0 "Off(Reserved" ;
+VAL_ 677 MMI_AirDistributionModeReq 7 "Not set" 6 " Reserved" 5 "Reserved" 4 "Screen" 3 " Foot Screen" 2 "Foot" 1 " Bilevel(Foot face)" 0 "Face" ;
+VAL_ 677 MMI_AirConditionerPowerKey 1 " Pressed" 0 " Not Pressed" ;
+VAL_ 677 MMI_LeftSetTemp 48 "Hi" 2 "18" 1 "17.5" 0 "Lo" ;
+VAL_ 704 TCU_TMSFaultLevel 7 "Reserved" 6 "Reserved" 5 "Reserved" 4 "Fault Level 4" 3 "Fault Level 3" 2 "Fault Level 2" 1 "Fault Level 1" 0 "No Fault" ;
+VAL_ 704 TCU_HvOnReq 1 "Request" 0 "No Request" ;
+VAL_ 704 TCU_BattTMState 7 "Reserved" 6 "Reserved" 5 "Reserved" 4 "exception mode" 3 "pump only mode" 2 "heating mode" 1 "cooling mode" 0 "sleep mode and no coolant flow" ;
+VAL_ 704 TCU_HVPwrState 3 "Reserved" 2 "One Side No Power or Error" 1 "ready to Power On" 0 "ready to Power Off" ;
+VAL_ 704 TCU_HVACACState 3 "Reserved" 2 "Manual" 1 "Auto" 0 "Default" ;
+VAL_ 704 TCU_EVCompState 3 "Reserved" 2 "ON" 1 "OFF" 0 "Default" ;
+VAL_ 704 TCU_APTCState 3 "Reserved" 2 "ON" 1 "OFF" 0 "Default" ;
+VAL_ 704 TCU_HVCHState 3 "Reserved" 2 "ON" 1 "OFF" 0 "Default" ;
+VAL_ 705 TCU_APTC1Enable 1 "Allowed" 0 " Not Allowed" ;
+VAL_ 705 TCU_CompEnable 1 " Enabled" 0 " Disabled" ;
+VAL_ 754 AC_MaxAcState 1 " MAX AC" 0 " OFF" ;
+VAL_ 754 AC_FrontDefrostState 1 " ON" 0 " OFF" ;
+VAL_ 754 AC_IntakeAirState 3 " Invalid" 2 " Reserved" 1 " Recirculation" 0 " Fresh" ;
+VAL_ 754 AC_BlowerLevel 15 " Invalid" 8 "Blower Level =8" 7 "Blower Level =7" 6 "Blower Level =6" 5 "Blower Level =5" 4 "Blower Level =4" 3 "Blower Level =3" 2 "Blower Level =2" 1 "Blower Level =1" 0 " OFF" ;
+VAL_ 754 AC_AirDistributionMode 7 " Invalid" 4 " Screen" 3 " Foot Screen(Mix)" 2 " Foo" 1 " Bilevel" 0 " Face" ;
+VAL_ 754 AC_OnState 1 " O" 0 " OF" ;
+VAL_ 754 AC_LeftSetTemperature 31 " Invalid" 30 " HI" 0 " LO" ;
+VAL_ 714 APTC_HVPowerUpReq 1 "APTC failure " 0 "APTC OK" ;
+VAL_ 714 APTC_HeatingFaltStatus 1 " error " 0 "no error" ;
+VAL_ 714 APTC_DriveFaltStatus 1 "error " 0 "no error" ;
+VAL_ 714 APTC_LostCommuFaltStatus 1 "TCU signal losted " 0 "no error" ;
+VAL_ 714 APTC_IGBTFaltStatus 3 " BOTH SHORT" 2 "IGBT2 SHORT " 1 "IGBT1 SHORT " 0 "no error" ;
+VAL_ 714 APTC_Core1TempSensorFaltStatus 2 "sensor short" 1 "L sensor open " 0 "no error" ;
+VAL_ 714 APTC_Core2TempSensorFaltStatus 2 "sensor short" 1 "R sensor open " 0 "no error" ;
+VAL_ 715 EVCOM_OverPwrDropFreqError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_OverCurDropFreqError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_CommunicationError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_StandByUnderVolError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_StandByOverVolError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_UnderVoltageError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_OverVoltageError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_OverCurrentError 1 " Error" 0 " No Error" ;
+VAL_ 715 EVCOM_CompActlSpdValid 1 " Valid" 0 " Invalid" ;
+VAL_ 715 EVCOM_CompActlCnsmpCurValid 1 " Valid" 0 " Invalid" ;
+VAL_ 715 EVCOM_CompActlPwrCnsmpValid 1 " Valid" 0 " Invalid" ;
+VAL_ 715 EVCOM_ActlOprtMode 3 "emrgncy shutdown" 2 " running" 1 " standby" 0 " off" ;
+VAL_ 715 EVCOM_FailStatus 1 " Error" 0 " No Error;" ;
+VAL_ 715 EVCOM_CompDeratingOprtStatus 1 " Derating on" 0 " Derating off;" ;
+VAL_ 70 VCU_KL15On 1 "On" 0 "Off" ;
+VAL_ 70 VCU_MCUSurgeDamperState 2 "DstC_int_ext" 1 "DstC_ext" 0 "DstC_off" ;
+VAL_ 70 VCU_BrakepedalStatus 1 " Brake pressed" 0 " Brake Not Pressed" ;
+VAL_ 70 VCU_MCURequestedState 4 "Shutdown" 3 "Discharge" 2 "Active Hearting" 1 "TrqCtr" 0 "Ready " ;
+VAL_ 70 VCU_TCSActive 1 "Active" 0 "NotActive" ;
+VAL_ 70 VCU_ActualGear 4 "D" 3 "R" 2 "N" 1 "P" 0 "reserve" ;
+VAL_ 71 VCU_MinTorqueLimit 2047 "Error" 2046 "Init" ;
+VAL_ 71 VCU_MaxTorqueGradient 16383 "Error" 16382 "Init;" ;
+VAL_ 71 VCU_MaxTorqueLimit 2047 "Error" 2046 "Init;" ;
+VAL_ 71 VCU_TrqThresholdDampgCtl 255 "Error" 254 "Init;" ;
+VAL_ 768 VCU_CurrentCommandEnable 1 "Enabled" 0 "Disabled" ;
+VAL_ 627 VCU_VoltageDemandLV 511 "Error" 510 "Init;" ;
+VAL_ 627 VCU_ModeRequestDCDC 2 "Disabl" 1 "Buck" 0 "OFF" ;
+VAL_ 629 VCU_Enable_DC_Relay 1 "Close Request" 0 "Open Request" ;
+VAL_ 628 VCU_OBC_Control_of_S2_SW 1 "Close" 0 "Open;" ;
+VAL_ 628 VCU_OBC_Control_of_em_lock 1 "Close" 0 "Open;" ;
+VAL_ 628 VCU_EnableOBC 3 "Disable" 2 "Enable" 1 " Ready" 0 " Sleep" ;
+VAL_ 161 VCU_RequestedModeBMS 7 " InitValue" 6 "  Reserved" 5 " EmergencyOff" 4 " Reserved" 3 " Reserved" 2 " Reserved" 1 " HVActive" 0 " InActive" ;
+VAL_ 161 VCU_IsoMeasurementSwitch 1 " Off" 0 " On" ;
+VAL_ 161 VCU_HVStatus 7 " Discharging" 6 " DCcharging" 5 " ACCharging" 4 " Drive ready" 3 " HV ready" 2 " HV start-up" 1 " Standby" 0 " Sleep" ;
+VAL_ 161 VCU_Chargestatus 9 "? Fault" 8 " ?Charging Completed" 7 "? V2L Discharging" 6 "? DC Charging" 5 "? AC Charging" 4 "? V2L Plug Detected" 3 "? DC Plug Detected" 2 "? AC Plug Detected" 1 "? Off Plug" 0 "? Initializing" ;
+VAL_ 630 VCU_RequestedModeTCU 3 "Enable" 2 "Disable" 1 "Standby" 0 "Init" ;
+VAL_ 881 POD_TempSensor1Fault 1 "Fault" 0 "No Fault" ;
+VAL_ 881 POD_DCPortInletTempBValid 2 "normal" 1 "Short Circuit " 0 "Damage" ;
+VAL_ 881 POD_DCPortInletTempAValid 2 "normal" 1 "Short Circuit " 0 "Damage" ;
+VAL_ 881 POD_DCPosRelayState 2 "Error" 1 "Closing" 0 "Opening" ;
+VAL_ 881 POD_DCNegRelayState 2 "Error" 1 "Closing" 0 "Opening" ;
+VAL_ 885 DCDC_WorkMode 3 "Fault" 2 "Buck" 1 "Standby" 0 "Init" ;
+VAL_ 886 DCDC_FaultStatus 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "No Fault" ;
+VAL_ 886 DCDC_OutputCurrentHighFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_InputVoltHighFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_InputVoltLowFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_OutputVoltHighFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 886 DCDC_OutputVoltLowFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_OutputSOGFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_PrimarySideOvertempStatus 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_SecordarySideOvertempStatus 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_OBCTempHighFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_OutputCurrentSensorFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 886 DCDC_OutputTempSensorFault 1 "Fault" 0 "No Fault" ;
+VAL_ 886 DCDC_ComFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 886 DCDC_StopFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 886 DCDC_InternalFault 1 "Fault" 0 "NoFault" ;
+VAL_ 886 DCDC_OBC_CANBusoff 1 "Fault" 0 "No Fault" ;
+VAL_ 886 OBC_DCDC_KL30Error 1 "Fault" 0 "No Fault" ;
+VAL_ 887 OBC_ChargeStatus 7 " Fault" 6 " Sleep" 5 " V2L Mode" 4 " Pre-heating Mode" 3 " Charging Mode" 2 " Ready" 1 " Standby" 0 " Init" ;
+VAL_ 889 OBC_CCStatus 7 " Fault" 6 " 2000 Ohm" 5 " 100 Ohm" 4 "220 Ohm" 3 "680 Ohm " 2 "1500 Ohm " 1 "Half-connected" 0 "Unconnected" ;
+VAL_ 889 OBC_CPStatus 7 "Reserve" 6 "Reserve" 5 "Fault" 4 "6V PWM" 3 "6V" 2 "9V PWM" 1 "9V" 0 "Unconnected" ;
+VAL_ 889 OBC_EMLockState 2 "Error" 1 "Close" 0 "Open" ;
+VAL_ 889 OBC_ChargCapacibility 2 "Error" 1 "Three-phase" 0 "single-phase" ;
+VAL_ 889 OBC_S2State 2 "Error" 1 "Close" 0 "Open" ;
+VAL_ 890 OBC_ACPortTempASensValid 2 "Normal " 1 "Short Circuit " 0 "Damage" ;
+VAL_ 890 OBC_ACPortTempBSensValid 2 "Normal " 1 "Short Circuit " 0 "Damage" ;
+VAL_ 890 OBC_ACPortTempAerror 1 "Fault" 0 "No Fault" ;
+VAL_ 890 OBC_ACPortTempBerror 1 "Fault" 0 "No Fault" ;
+VAL_ 890 OBC_DCVoltLowFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_FaultLevel 3 "Level3" 2 "Level2" 1 "Level1" 0 "No Fault" ;
+VAL_ 890 OBC_DCVoltHighFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_StartUpAllowed 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_CommunFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_DCCurHighFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_ACVoltHighFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_ACVoltLowFault 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_NlineStatus 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_InputFrequencyStatus 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_InputPhaseStatus 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_InputOverCurrentstatus_R 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_InputOverCurrentstatus_S 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_InputOverCurrentstatus_T 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_PFCUnderVoltageError 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_PFCOverVoltageError 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_OutputShortError 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 POD_faultTemp 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_PrimarySideOvertempStatus 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_SecordarySideOvertempStatus 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_ComFault1 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_ComFault2 1 "Fault" 0 "No Fault;" ;
+VAL_ 890 OBC_internalFault 1 "Fault" 0 "No Fault" ;
+VAL_ 912 BMS_InsulationDetectionStatus 1 "active" 0 "stop" ;
+VAL_ 174 BMS_status 7 "Invalid" 6 "Error" 5 "Discharge" 4 "AC charge" 3 "DC charge" 2 "running" 1 "standby" 0 "initialize" ;
+VAL_ 174 BMS_BatStatus 4 "Shutdown" 3 "Error" 2 "Run" 1 "Standby" 0 "power" ;
+VAL_ 174 BMS_PreCharge 3 "Precharge failed" 2 "Precharge finished" 1 "Precharging" 0 "Not precharge" ;
+VAL_ 174 BMS_ChargeStatus 7 "Charge stop" 6 "Charge hold" 5 "Charge only(AC)" 4 "Charge only(DC)" 3 "Charge and heat(AC)" 2 "Charge and heat(DC)" 1 "Heat only" 0 "Not charging" ;
+VAL_ 174 BMS_RunHeatStatus 3 "Running cool" 2 "App heat" 1 "Target heat" 0 "Running heat" ;
+VAL_ 174 BMS_ErrorLevel 4 "level4" 3 "level3" 2 "level2" 1 "level1" 0 "Normal" ;
+VAL_ 174 BMS_BalancingStatus 1 "active" 0 "stop" ;
+VAL_ 174 BMS_HVinterlockState 1 "Fault" 0 "Normal" ;
+VAL_ 659 BMS_PosRelayStatus 3 "Signal Invalid" 2 "Closed" 1 "Opened" 0 "Reserved" ;
+VAL_ 659 BMS_PTCRelayStatus 3 "Signal Invalid" 2 "Closed" 1 "Opened" 0 "Reserved" ;
+VAL_ 659 BMS_NegRelayStatus 3 "Signal Invalid" 2 "Closed" 1 "Opened" 0 "Reserved" ;
+VAL_ 659 BMS_PreRelayStatus 3 "Signal Invalid" 2 "Closed" 1 "Opened" 0 "Reserved" ;
+VAL_ 660 BMS_ChrgDcChrgnReq 2 " charging request" 1 "no charging request" 0 "invalid" ;
+VAL_ 660 BMS_DCChgMode 2 "constant current" 1 "constant voltage" 0 "ready" ;
+VAL_ 660 BMS_AbortAchiveSingleVolt 2 "untrustable" 1 "reached" 0 "not reached" ;
+VAL_ 660 BMS_AbortAchiveTotalVolt 2 "untrustable" 1 "reached" 0 "not reached" ;
+VAL_ 660 BMS_AbortFaultBMSTemp 2 "untrustable" 1 "over temp" 0 "normal" ;
+VAL_ 660 BMS_AbortFaultBatteryTemp 2 "untrustable" 1 "over temp" 0 "normal" ;
+VAL_ 660 BMS_AbortErrorCurrent 2 "untrustable" 1 "over current" 0 "normal" ;
+VAL_ 660 BMS_AbortAchivesetValue 2 "untrustable" 1 "reached" 0 "not reached" ;
+VAL_ 660 BMS_AbortErrorVoltage 2 "untrustable" 1 "abnormal" 0 "normal" ;
+VAL_ 660 BMS_ChagComplete 3 "During Charging" 2 "Untrustable" 1 " Abnormal completion" 0 " Normal Completion" ;
+VAL_ 803 BMS_HeatCommand 7 "Target heat" 6 "Reserved" 5 "Keep warm" 4 "Running heat" 3 "Charge and heat(AC)" 2 "Charge and heat(DC)" 1 "Preheating" 0 "Not heat" ;
+VAL_ 803 BMS_BalanceCommand 1 " request " 0 "No request" ;
+VAL_ 803 BMS_CoolCommand 7 "Target cool" 6 "Reserved" 5 "Keep cool" 4 "Running cool" 3 "Charge and cool(AC)" 2 "Charge and cool(DC)" 1 "Reserved" 0 "Not cooling" ;
+VAL_ 898 BMS_ErrorCellOverVolt 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellUnderVolt 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellHighTemp 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellLowTemp 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorBattOverVolt 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorBattUnderVolt 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorChaCurrentOver 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorDisChaCurrentOver 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorBSUOffline 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ErrorLeakCurrent 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellVoltDiff 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellTempDiff 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorBatVolt 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorHallOffline 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ErrorCellVoltOffline 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorCellTempOffline 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ErrorPreChaFailed 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorRelay 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ErrorBSUBalance 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorIsolationSingleLow 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorLowSOC 3 "Fault Level3" 2 "Fault Level2" 1 "Fault Level1" 0 "Normal" ;
+VAL_ 898 BMS_ErrorHighSoc 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorSoCJump_RM 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ErrorHVIL 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorEmergencyOffCrash 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorSystemsMatch 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorSmoke 1 "Fault" 0 "Normal;" ;
+VAL_ 898 BMS_ErrorLeakDet 1 "Fault" 0 "Normal" ;
+VAL_ 898 BMS_ThermalRunawayFault 1 "Fault" 0 "Normal" ;
+VAL_ 945 BMS_BatProRights 1 "Buy" 0 "lease" ;
+VAL_ 122 MCU_ActTrqValid 1 "valid" 0 "invalid" ;
+VAL_ 122 MCU_ActualSpeedValid 1 "valid" 0 "invalid" ;
+VAL_ 124 MCU_TempStatus 3 "Over Heating" 2 "Heating alarm 2" 1 "Heating alarm 1" 0 "Normal Temperature" ;
+VAL_ 125 MCU_bDmpCActv 1 "Damping Off" 0 "Damping On" ;
+VAL_ 125 MCU_stGateDrv 2 "PWMrun" 1 "FreeWheel" 0 "ASC" ;
+VAL_ 125 MCU_VCUWorkMode 7 "Motor Active Hearting" 6 "Afterrun" 5 "ActiveDischarge" 4 "Shutdown" 3 "Torque Control" 2 "Ready" 1 "Standby" 0 "Initialization" ;
+VAL_ 709 MCU_bDernOvrIdc 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernOvrUdc 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernStrTemp 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernTrqMax 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernTrqMin 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernUndrIdc 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernUndrUdc 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bReadyHv 1 "Precharge Finished" 0 "PreCharge Not Finished" ;
+VAL_ 709 MCU_bDernTempIGBT 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernTempCool 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_bDernN 1 "Derating" 0 "Normal " ;
+VAL_ 709 MCU_stDischg 3 " Failed" 2 " Finished" 1 " Active" 0 " Standby" ;
+VAL_ 710 MCU_FailCode1 4 " Fault Level4" 3 " Fault Level3" 2 " Fault Level2" 1 " Fault Level1" 0 "No Fault" ;
+

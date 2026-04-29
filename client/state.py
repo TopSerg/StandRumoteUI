@@ -15,6 +15,7 @@ TELEM_COLUMNS = [
     "Idc", "Isd",
     "Ud", "Uq", "Id", "Iq",
     "Flux", "Theta", "Temperature",
+    "Rs", "TimeStamp", "ThetaCorr",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
@@ -30,6 +31,9 @@ FIELD_ALIASES = {
     "Theta": ["Theta", "ZVTheta"],
     "Flux": ["Flux", "ZVFlux", "E_back"],
     "Temperature": ["Temperature", "ZVThemperature", "ZVTemperature"],
+    "Rs": ["Rs", "ZVRs"],
+    "TimeStamp": ["TimeStamp", "ZVTimeStamp"],
+    "ThetaCorr": ["ThetaCorr", "ZVThetaCorr"],
 }
 
 # Маппинг коробки передач (по DBC VcuActualGear)
