@@ -10,6 +10,8 @@
 
 namespace {
 
+constexpr bool kUseDbcRuntimePacking = false;
+
 bool logTxEnabled()
 {
     return std::getenv("WS_LOG_CAN") || std::getenv("WS_LOG_TX");
@@ -63,7 +65,7 @@ void printPayloadHex(const uint8_t payload[8]) {
 }
 
 void CommandSender::sendControlCommand(CANInterface& can, const DataModel& data) {
-    if (sendCachedCommand(can, data, "SendControl")) {
+    if (kUseDbcRuntimePacking && sendCachedCommand(can, data, "SendControl")) {
         return;
     }
 
@@ -133,7 +135,7 @@ void CommandSender::sendControlCommand(CANInterface& can, const DataModel& data)
 }
 
 void CommandSender::sendLimitCommand(CANInterface& can, const DataModel& data) {
-    if (sendCachedCommand(can, data, "SendLimits")) {
+    if (kUseDbcRuntimePacking && sendCachedCommand(can, data, "SendLimits")) {
         return;
     }
 
@@ -181,7 +183,7 @@ void CommandSender::sendLimitCommand(CANInterface& can, const DataModel& data) {
 
 
 void CommandSender::sendTorqueCommand(CANInterface& can, DataModel& data) {
-    if (sendCachedCommand(can, data, "SendTorque")) {
+    if (kUseDbcRuntimePacking && sendCachedCommand(can, data, "SendTorque")) {
         return;
     }
 

@@ -5,6 +5,12 @@
 #include <cstring>
 #include <iomanip>
 
+namespace {
+
+constexpr bool kUseDbcRuntimeParsing = false;
+
+}
+
 void printCANMessage(const CANMessage& msg, std::ostream& os, bool showDec) {
     os << "[CAN RX] ID=0x" << std::uppercase << std::hex << msg.id
        << " (" << std::dec << msg.id << ")"
@@ -60,14 +66,16 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         printCANMessage(msg, std::cout, 0);
     }
 
-    const std::vector<DbcRxSignal>* cachedSignals = DbcSignalCache::instance().rxSignals(msg.id);
-    if (cachedSignals) {
-        for (const DbcRxSignal& signal : *cachedSignals) {
-            const uint32_t raw = unpackDbcSignal(msg.data, signal.def.startBit, signal.def.length);
-            const double physical = static_cast<double>(raw) * signal.def.factor + signal.def.offset;
-            signal.set(data, physical);
+    if (kUseDbcRuntimeParsing) {
+        const std::vector<DbcRxSignal>* cachedSignals = DbcSignalCache::instance().rxSignals(msg.id);
+        if (cachedSignals) {
+            for (const DbcRxSignal& signal : *cachedSignals) {
+                const uint32_t raw = unpackDbcSignal(msg.data, signal.def.startBit, signal.def.length);
+                const double physical = static_cast<double>(raw) * signal.def.factor + signal.def.offset;
+                signal.set(data, physical);
+            }
+            return;
         }
-        return;
     }
 
     switch (msg.id) {
