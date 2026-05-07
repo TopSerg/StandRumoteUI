@@ -142,6 +142,10 @@ std::string serializeData() {
     j["Iq"] = model.Iq;
 
     // ➕ Новые поля из MCU_FluxParams (0x4F7)
+    j["Flux"] = model.ZVFlux;
+    j["Temperature"] = model.ZVTemperature;
+    j["Rs"] = model.ZVRs;
+    j["motorRs"] = model.ZVRs;
     j["ZVFlux"] = model.ZVFlux;
     j["ZVTheta"] = model.ZVTheta;
     j["ZVTemperature"] = model.ZVTemperature;
