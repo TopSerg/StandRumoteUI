@@ -1,5 +1,6 @@
 //Stand_Marathon/src/MarathonLogic.cpp
 #include "MarathonLogic.h"
+#include "DbcSignalCache.h"
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -58,6 +59,17 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
     std::cout << "I`m here\n";
         printCANMessage(msg, std::cout, 0);
     }
+
+    const std::vector<DbcRxSignal>* cachedSignals = DbcSignalCache::instance().rxSignals(msg.id);
+    if (cachedSignals) {
+        for (const DbcRxSignal& signal : *cachedSignals) {
+            const uint32_t raw = unpackDbcSignal(msg.data, signal.def.startBit, signal.def.length);
+            const double physical = static_cast<double>(raw) * signal.def.factor + signal.def.offset;
+            signal.set(data, physical);
+        }
+        return;
+    }
+
     switch (msg.id) {
         case 0x7a: { // MCU_VCU_1 (BO_ 122)
             float actualTorque = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 7, 11)) - 1024;

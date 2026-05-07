@@ -95,6 +95,7 @@ class AppState:
         self.auto_delay_s_var = tk.DoubleVar(master=root, value=0.5)  # задержка между точками, сек
         self.auto_status_var = tk.StringVar(master=root, value="idle")
         self.auto_points_var = tk.StringVar(master=root, value="0")   # сколько точек загружено
+        self.json_period_ms_var = tk.StringVar(master=root, value="500")
 
         # --- Буферы трендов (все как в gui_ws.py) ---
         self.trend_ts = deque(maxlen=TREND_CAP)    # datetime для оси X

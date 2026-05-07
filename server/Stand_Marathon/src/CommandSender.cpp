@@ -1,10 +1,31 @@
 //Stand_Marathon/src/CommandSender.cpp
 #include "CommandSender.h"
+#include "DbcSignalCache.h"
 #include <iostream>
 
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
+#include <cmath>
+
+namespace {
+
+bool logTxEnabled()
+{
+    return std::getenv("WS_LOG_CAN") || std::getenv("WS_LOG_TX");
+}
+
+void printCanTxPayload(const char* label, uint32_t id, uint8_t dlc, const uint8_t* payload)
+{
+    std::printf("[CAN TX] %s ID=0x%03X DLC=%u DATA=%02X %02X %02X %02X %02X %02X %02X %02X\n",
+        label,
+        id,
+        dlc,
+        (unsigned)payload[0], (unsigned)payload[1], (unsigned)payload[2], (unsigned)payload[3],
+        (unsigned)payload[4], (unsigned)payload[5], (unsigned)payload[6], (unsigned)payload[7]);
+}
+
+} // namespace
 
 // Эта функция будет использоваться для упаковки сигналов
 void PackSignalToBytes(uint8_t* data, uint32_t value, uint8_t startBit, uint8_t length)
@@ -42,6 +63,10 @@ void printPayloadHex(const uint8_t payload[8]) {
 }
 
 void CommandSender::sendControlCommand(CANInterface& can, const DataModel& data) {
+    if (sendCachedCommand(can, data, "SendControl")) {
+        return;
+    }
+
     uint8_t payload[8] = {0};
 
     // 1. KL15On (1 бит, старт с 8)
@@ -108,6 +133,10 @@ void CommandSender::sendControlCommand(CANInterface& can, const DataModel& data)
 }
 
 void CommandSender::sendLimitCommand(CANInterface& can, const DataModel& data) {
+    if (sendCachedCommand(can, data, "SendLimits")) {
+        return;
+    }
+
     uint8_t payload[8] = {0};
 
     // 1. MinTorqueLimit (11 бит, смещение -1023, масштаб 1.0), старт с 7
@@ -152,6 +181,10 @@ void CommandSender::sendLimitCommand(CANInterface& can, const DataModel& data) {
 
 
 void CommandSender::sendTorqueCommand(CANInterface& can, DataModel& data) {
+    if (sendCachedCommand(can, data, "SendTorque")) {
+        return;
+    }
+
     uint8_t payload[8] = {0};
 
     // 1. VCU_IdCommand: 13 бит, 0.1 масштаб, -320 смещение, старт с 7 бита
@@ -181,6 +214,54 @@ void CommandSender::sendTorqueCommand(CANInterface& can, DataModel& data) {
         for (int i = 0; i < 8; ++i)
             std::printf("payload[%d] = 0x%02X\n", i, payload[i]);
     }
+}
+
+bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, const std::string& commandName) {
+    const DbcTxMessage* msg = DbcSignalCache::instance().txMessage(commandName);
+    if (!msg) {
+        return false;
+    }
+
+    uint8_t payload[8] = {0};
+    const bool logTx = logTxEnabled();
+    for (const DbcTxSignal& signal : msg->signals) {
+        const double physical = signal.get(data);
+        const double rawDouble = (physical - signal.def.offset) / signal.def.factor;
+        uint32_t raw = 0;
+        if (std::isfinite(rawDouble)) {
+            const double rounded = std::round(rawDouble);
+            const uint64_t maxRaw = signal.def.length >= 32 ? 0xffffffffULL : ((1ULL << signal.def.length) - 1ULL);
+            if (rounded <= 0.0) {
+                raw = 0;
+            } else if (rounded >= static_cast<double>(maxRaw)) {
+                raw = static_cast<uint32_t>(maxRaw);
+            } else {
+                raw = static_cast<uint32_t>(rounded);
+            }
+        }
+        packDbcSignal(payload, raw, signal.def.startBit, signal.def.length);
+
+        if (logTx) {
+            std::printf(
+                "[CAN TX SIGNAL] %s.%s physical=%.6f raw=%u start=%u len=%u factor=%.9g offset=%.9g\n",
+                commandName.c_str(),
+                signal.def.signalName.c_str(),
+                physical,
+                raw,
+                signal.def.startBit,
+                signal.def.length,
+                signal.def.factor,
+                signal.def.offset);
+        }
+    }
+
+    can.send(msg->messageId, payload, msg->dlc);
+
+    if (logTx) {
+        printCanTxPayload(commandName.c_str(), msg->messageId, msg->dlc, payload);
+    }
+
+    return true;
 }
 
 

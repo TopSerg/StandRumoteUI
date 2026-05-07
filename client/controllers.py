@@ -79,6 +79,7 @@ class Controllers:
         try:
             client.start()
             self.ui_log("[WS] connect:", url)
+            self.root.after(500, self._apply_json_period_when_connected)
         except Exception as e:
             self.ui_log("[WS] start failed:", e, "ERR")
 
@@ -128,6 +129,7 @@ class Controllers:
             "set_mode_from_ui": self.apply_mode,     # синоним для совместимости
 
             "connect_ws": self.connect_ws_from_ui,
+            "apply_json_period": self.apply_json_period,
 
             # синонимы на всякий случай
             "send_limits_now": self.send_limits_now,
@@ -149,6 +151,40 @@ class Controllers:
             self.ui_log("[WS] клиент не привязан", "ERR")
             return
         self.client.send_cmd_threadsafe(cmd)
+
+    def apply_json_period(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+
+        try:
+            period_ms = int(float(self.state.json_period_ms_var.get()))
+        except Exception:
+            self.ui_log("[UI] JSON ms: некорректное значение", "ERR")
+            return
+
+        if period_ms < 1:
+            self.ui_log("[UI] JSON ms: значение должно быть >= 1", "ERR")
+            return
+
+        self.state.json_period_ms_var.set(str(period_ms))
+        self.client.send_json_threadsafe({
+            "cmd": "SetJsonPeriod",
+            "period_ms": period_ms,
+        })
+        self.ui_log(f"[UI] JSON period set to {period_ms} ms", "UI")
+
+    def _apply_json_period_when_connected(self, attempts_left: int = 10) -> None:
+        if not self.client:
+            return
+        try:
+            if self.client.is_connected():
+                self.apply_json_period()
+                return
+        except Exception:
+            return
+        if attempts_left > 0:
+            self.root.after(500, lambda: self._apply_json_period_when_connected(attempts_left - 1))
 
     # ---- основная кнопка "Отправить" ----
 

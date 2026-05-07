@@ -177,6 +177,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.auto_delay_s_var = dv(getattr(state, "auto_delay_s_var", None), 0.5)
     state.auto_status_var  = sv(getattr(state, "auto_status_var", None), "idle")
     state.auto_points_var  = sv(getattr(state, "auto_points_var", None), "0")
+    state.json_period_ms_var = sv(getattr(state, "json_period_ms_var", None), "500")
 
     # массивы строк для CAN (12 полей: id, data0..7, len, flags, ts)
     if not getattr(state, "can_rx_data", None) or len(state.can_rx_data) != 12:
@@ -202,6 +203,16 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
                command=lambda: handlers.get("send_cmd", lambda *_: None)("Read2")).pack(side="left", padx=4, pady=PAD)
     ttk.Button(toolbar, text="💾 Save", width=14,
                command=lambda: handlers.get("send_cmd", lambda *_: None)("SaveCfg")).pack(side="left", padx=4, pady=PAD)
+
+    ttk.Label(toolbar, text="JSON ms:").pack(side="left", padx=(12, 4), pady=PAD)
+    json_period_entry = ttk.Entry(toolbar, textvariable=state.json_period_ms_var, width=8, justify="right")
+    json_period_entry.pack(side="left", padx=(0, 4), pady=PAD)
+    ttk.Button(toolbar, text="Apply", width=8,
+               command=handlers.get("apply_json_period", lambda: None)).pack(side="left", padx=(0, 4), pady=PAD)
+    json_period_entry.bind(
+        "<Return>",
+        lambda e: (handlers.get("apply_json_period", lambda: None)(), "break")[1],
+    )
 
     # поле адреса WS (host:port или ws://host:port)
     state.ws_addr_var = sv(getattr(state, "ws_addr_var", None), "192.168.8.100:9000")

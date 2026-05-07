@@ -1,0 +1,10 @@
+^C:\GVN\STANDREMOTEUI\SERVER\STAND_MARATHON\INCLUDE\CAN_DBC_MODULE\CMAKELISTS.TXT
+setlocal
+C:\Users\s.makov\scoop\apps\cmake\current\bin\cmake.exe -SC:/gvn/StandRemoteUI/server -BC:/gvn/StandRemoteUI/server/out/build/x64-Release --check-stamp-file C:/gvn/StandRemoteUI/server/out/build/x64-Release/Stand_Marathon/Include/CAN_DBC_MODULE/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

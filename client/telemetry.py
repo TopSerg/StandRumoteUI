@@ -206,6 +206,8 @@ class Telemetry:
         Flux = self._as_float(self._get_alias(d, "Flux"))
         Theta = self._as_float(self._get_alias(d, "Theta"))
         Temperature = self._as_float(self._get_alias(d, "Temperature"))
+        TimeStamp = self._as_float(self._get_alias(d, "TimeStamp"))
+        ThetaCorr = self._as_float(self._get_alias(d, "ThetaCorr"))
 
         # Emf: для UI — по ключу "Emf", для расчёта — по "motorEmfCalc" (как в gui_ws)
         Emf_ui_raw = self._get_alias(d, "Emf")
@@ -541,13 +543,22 @@ class Telemetry:
             ln_pmech = mp.get("ln_pmech")
             ln_pelec = mp.get("ln_pelec")
             if ln_torque:
-                x = list(self.state.map_ns)
                 try:
-                    ln_torque.set_data(x, list(self.state.map_Ms))
+                    x = list(self.state.map_ns)
+
+                    def _set_line(line, y_values):
+                        y = list(y_values)
+                        if not y:
+                            line.set_data([], [])
+                            return
+                        n = min(len(x), len(y))
+                        line.set_data(x[-n:], y[-n:])
+
+                    _set_line(ln_torque, self.state.map_Ms)
                     if ln_pmech:
-                        ln_pmech.set_data(x, list(self.state.map_Pmech))
+                        _set_line(ln_pmech, self.state.map_Pmech)
                     if ln_pelec:
-                        ln_pelec.set_data(x, list(self.state.map_Pelec))
+                        _set_line(ln_pelec, self.state.map_Pelec)
                     ax6 = mp.get("ax6")
                     ax6r = mp.get("ax6r") or mp.get("ax6_right")
                     for ax in (ax6, ax6r):

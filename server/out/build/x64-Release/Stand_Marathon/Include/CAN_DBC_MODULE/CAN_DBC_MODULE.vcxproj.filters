@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuCurrentVoltage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuDeratingStatus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuFailureCode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuStatus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuTemperature1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuTemperature2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\McuVCU1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\VcuMCU01.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\VcuMCU02.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DBC_MSG\build\VcutoMCUCurrentCommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\DbcDispatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\build\CMakeFiles\4.0.0\CompilerIdCXX\CMakeCXXCompilerId.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\CANDBCUtils.c">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\CANErrorsHandlers.c">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\CANSignalsMap.c">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\build\CMakeFiles\4.0.0\CompilerIdC\CMakeCCompilerId.c">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\Include\CAN_DBC_MODULE\canDBCtask.c">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0500D20D-674C-3C42-AAA0-95DED52904C1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

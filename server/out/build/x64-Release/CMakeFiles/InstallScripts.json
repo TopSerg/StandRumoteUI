@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/gvn/StandRemoteUI/server/out/build/x64-Release/cmake_install.cmake",
+		"C:/gvn/StandRemoteUI/server/out/build/x64-Release/Stand_Marathon/Include/CAN_DBC_MODULE/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,10 @@
+^C:\GVN\STANDREMOTEUI\SERVER\OUT\BUILD\X64-RELEASE\CMAKEFILES\83DC937B72B1EA312BB2630FE9C73D4B\GENERATE.STAMP.RULE
+setlocal
+C:\Users\s.makov\scoop\apps\cmake\current\bin\cmake.exe -SC:/gvn/StandRemoteUI/server -BC:/gvn/StandRemoteUI/server/out/build/x64-Release --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/gvn/StandRemoteUI/server/out/build/x64-Release/GUI_Marathon.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

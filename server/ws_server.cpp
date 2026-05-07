@@ -12,6 +12,7 @@
 #include <chrono>
 #include <iostream>
 #include <type_traits>
+#include <atomic>
 
 // мои заголовки
 #include "DataModel.h"
@@ -47,14 +48,19 @@ inline void set_if_present(const json& j, const char* key, T& target) {
 static bool         g_log_can   = false;
 static std::mutex   g_log_mutex;
 static std::ofstream g_log_file;
+static std::atomic<int> g_json_period_ms{500};
+
+static bool env_enabled(const char* name)
+{
+    const char* env = std::getenv(name);
+    if (!env) return false;
+    std::string v(env);
+    return v == "1" || v == "true" || v == "TRUE";
+}
 
 static void init_can_log()
 {
-    const char* env = std::getenv("WS_LOG_CAN");
-    if (!env) return;
-
-    std::string v(env);
-    if (v == "1" || v == "true" || v == "TRUE") {
+    if (env_enabled("WS_LOG_CAN")) {
         g_log_can = true;
         g_log_file.open("ws_can_log.jsonl", std::ios::app);
         if (!g_log_file) {
@@ -72,6 +78,12 @@ static void log_can_json(const json& j)
     std::lock_guard<std::mutex> lk(g_log_mutex);
     if (!g_log_file.is_open()) return;
     g_log_file << j.dump() << std::endl;
+}
+
+static void log_ws_tx(const std::string& data)
+{
+    if (!env_enabled("WS_LOG_JSON_TX") && !env_enabled("WS_LOG_TX")) return;
+    std::cout << "[WS TX] " << data << std::endl;
 }
 
 // применить параметры управления (для "SendControl")
@@ -136,6 +148,7 @@ std::string serializeData() {
     j["ZVRs"] = model.ZVRs;
     j["ZVTimeStamp"] = model.ZVTimeStamp;
     j["ZVThetaCorr"] = model.ZVThetaCorr;
+    j["json_period_ms"] = g_json_period_ms.load();
 
     return j.dump();
 }
@@ -190,6 +203,13 @@ void handleCommand(const json& j) {
         std::cout << "ABOBA" << std::endl;
         apply_torque_fields(j);
         CommandSender::sendTorqueCommand(can, model);
+    } else if (cmd == "SetJsonPeriod") {
+        int period_ms = j.value("period_ms", 500);
+        if (period_ms < 1) {
+            period_ms = 1;
+        }
+        g_json_period_ms.store(period_ms);
+        std::cout << "[WS] JSON period set to " << period_ms << " ms" << std::endl;
     } else {
         std::cerr << "[Warn] Unknown command: " << cmd << std::endl;
     }
@@ -197,8 +217,6 @@ void handleCommand(const json& j) {
 
 
 using clock1 = std::chrono::steady_clock;
-clock1::time_point t01 = clock1::now();
-static constexpr std::chrono::milliseconds PERIOD_CTRL1  {500};   // 0x046
 
 // Модифицируем функцию do_session для отправки CAN-сообщений
 void do_session(tcp::socket socket) {
@@ -210,14 +228,17 @@ void do_session(tcp::socket socket) {
         std::atomic<bool> running{true};
 
         std::thread updater([ws, &running]() {
+            auto last_json_send = clock1::now();
             while (running) {
                 try {
                     sm.update();
                     const auto now1 = clock1::now();
-                    if(now1 - t01 > PERIOD_CTRL1){
+                    const auto period = std::chrono::milliseconds(g_json_period_ms.load());
+                    if(now1 - last_json_send >= period){
                         std::string data = serializeData();
+                        log_ws_tx(data);
                         ws->write(boost::asio::buffer(data));
-                        t01 = now1;
+                        last_json_send = now1;
                     }
 
                     /*std::vector<uint8_t> can_data = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
