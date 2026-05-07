@@ -7,7 +7,7 @@
 
 namespace {
 
-constexpr bool kUseDbcRuntimeParsing = false;
+constexpr bool kUseDbcRuntimeParsing = true;
 
 }
 

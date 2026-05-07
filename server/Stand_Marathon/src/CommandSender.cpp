@@ -10,7 +10,7 @@
 
 namespace {
 
-constexpr bool kUseDbcRuntimePacking = false;
+constexpr bool kUseDbcRuntimePacking = true;
 
 bool logTxEnabled()
 {
