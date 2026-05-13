@@ -261,6 +261,8 @@ class Telemetry:
         Iq = self._as_float(self._get_alias(d, "Iq"))
         Idc = self._as_float(d.get("Idc"))
         Isd = self._as_float(d.get("Isd"))
+        Isq = self._as_float(d.get("Isq"))
+        Udc = self._as_float(d.get("Udc"))
         Ms = self._as_float(d.get("Ms"))
         ns = self._as_float(d.get("ns"))
 
@@ -269,6 +271,16 @@ class Telemetry:
         igbt_w = self._as_float(d.get("MCU_IGBTTempW"))
         igbt_max = self._as_float(d.get("MCU_IGBTTempMax"))
         stator = self._as_float(d.get("MCU_TempCurrStr"))
+        coolant = self._as_float(d.get("MCU_TempCurrCool"))
+        m_max = self._as_float(d.get("M_max"))
+        m_min = self._as_float(d.get("M_min"))
+        mcu_ofs_al = self._as_float(d.get("MCU_OfsAl"))
+        mcu_isd = self._as_float(d.get("MCU_Isd"))
+        mcu_isq = self._as_float(d.get("MCU_Isq"))
+        mcu_b_dmp = self._as_float(d.get("MCU_bDmpCActv"))
+        mcu_gate = self._as_float(d.get("MCU_stGateDrv"))
+        mcu_dmp_trq = self._as_float(d.get("MCU_DmpCTrqCurr"))
+        mcu_work_mode = self._as_float(d.get("MCU_VCUWorkMode"))
 
         Flux = self._as_float(self._get_alias(d, "Flux"))
         Theta = self._as_float(self._get_alias(d, "Theta"))
@@ -340,8 +352,10 @@ class Telemetry:
             "ts": datetime.now().strftime("%H:%M:%S.%f")[:-3],
             "ns": ns,
             "Ms": Ms,
+            "Udc": Udc,
             "Idc": Idc,
             "Isd": Isd,
+            "Isq": Isq,
             "Ud": Ud,
             "Uq": Uq,
             "Id": Id,
@@ -356,6 +370,21 @@ class Telemetry:
             "Rs": Rs,
             "TimeStamp": TimeStamp,
             "ThetaCorr": ThetaCorr,
+            "MCU_IGBTTempU": igbt_u,
+            "MCU_IGBTTempV": igbt_v,
+            "MCU_IGBTTempW": igbt_w,
+            "MCU_IGBTTempMax": igbt_max,
+            "MCU_TempCurrStr": stator,
+            "MCU_TempCurrCool": coolant,
+            "M_max": m_max,
+            "M_min": m_min,
+            "MCU_OfsAl": mcu_ofs_al,
+            "MCU_Isd": mcu_isd,
+            "MCU_Isq": mcu_isq,
+            "MCU_bDmpCActv": mcu_b_dmp,
+            "MCU_stGateDrv": mcu_gate,
+            "MCU_DmpCTrqCurr": mcu_dmp_trq,
+            "MCU_VCUWorkMode": mcu_work_mode,
         }
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:
             if not isinstance(sample, dict):

@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr bool kUseDbcRuntimeParsing = true;
+constexpr bool kLogDbcSelectedSignals = true;
 
 }
 
@@ -67,7 +67,7 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         printCANMessage(msg, std::cout, 0);
     }
 
-    if (kUseDbcRuntimeParsing) {
+    if (kLogDbcSelectedSignals) {
         DbcSignalCache& cache = DbcSignalCache::instance();
         const std::vector<DbcSignalDef> allDefs = cache.messageSignals(msg.id);
         for (const DbcSignalDef& def : allDefs) {
@@ -90,26 +90,6 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
                 raw,
                 physical,
                 selected);
-        }
-
-        const std::vector<DbcRxSignal>* cachedSignals = cache.rxSignals(msg.id);
-        if (cachedSignals) {
-            for (const DbcRxSignal& signal : *cachedSignals) {
-                if (!cache.isRxSelected(signal.def.signalName)) {
-                    continue;
-                }
-                const uint32_t raw = unpackDbcSignal(msg.data, signal.def.startBit, signal.def.length);
-                const double physical = static_cast<double>(raw) * signal.def.factor + signal.def.offset;
-                signal.set(data, physical);
-            }
-            if (msg.id == 0x80) {
-                std::cout << "[RX] FluxParams: "
-                          << "ZVTemperature=" << data.ZVTemperature
-                          << " ZVFlux=" << data.ZVFlux
-                          << " ZVRs=" << data.ZVRs
-                          << std::endl;
-            }
-            return;
         }
     }
 

@@ -131,6 +131,8 @@ std::string serializeData() {
     j["Isd"] = model.Isd;
     j["Isq"] = model.Isq;
     j["Udc"] = model.Udc;
+    j["M_max"] = model.M_max;
+    j["M_min"] = model.M_min;
     j["Kl_15"] = model.Kl_15;
     j["Brake_active"] = model.Brake_active;
     j["TCS_active"] = model.TCS_active;
@@ -139,6 +141,14 @@ std::string serializeData() {
     j["MCU_IGBTTempW"] = model.MCU_IGBTTempW;
     j["MCU_IGBTTempMax"] = model.MCU_IGBTTempMax;
     j["MCU_TempCurrStr"] = model.MCU_TempCurrStr;
+    j["MCU_TempCurrCool"] = model.MCU_TempCurrCool;
+    j["MCU_OfsAl"] = model.MCU_OfsAl;
+    j["MCU_Isd"] = model.MCU_Isd;
+    j["MCU_Isq"] = model.MCU_Isq;
+    j["MCU_bDmpCActv"] = model.MCU_bDmpCActv;
+    j["MCU_stGateDrv"] = model.MCU_stGateDrv;
+    j["MCU_DmpCTrqCurr"] = model.MCU_DmpCTrqCurr;
+    j["MCU_VCUWorkMode"] = model.MCU_VCUWorkMode;
 
     // ➕ Новые поля из MCU_CurrentVoltage (0x4F6)
     j["Ud"] = model.Ud;

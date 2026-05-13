@@ -12,10 +12,15 @@ PAD = 8
 TELEM_COLUMNS = [
     "ts",
     "ns", "Ms",
-    "Idc", "Isd",
+    "Udc", "Idc", "Isd", "Isq",
     "Ud", "Uq", "Id", "Iq",
     "Flux", "Theta", "Temperature",
     "Rs", "TimeStamp", "ThetaCorr",
+    "MCU_IGBTTempU", "MCU_IGBTTempV", "MCU_IGBTTempW", "MCU_IGBTTempMax",
+    "MCU_TempCurrStr", "MCU_TempCurrCool",
+    "M_max", "M_min",
+    "MCU_OfsAl", "MCU_Isd", "MCU_Isq", "MCU_bDmpCActv",
+    "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
