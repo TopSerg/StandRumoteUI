@@ -363,13 +363,20 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     for i, param in enumerate([
         "Speed rotation",
         "Torque (Ms)",
+        "DC voltage (Udc)",
         "direct current (Idc)",
         "Stator current d (Isd)",
+        "Stator current q (Isq)",
         "IGBT temperature U",
         "IGBT temperature V",
         "IGBT temperature W",
         "IGBT temperature Max",
         "Stator temperature",
+        "Coolant temperature",
+        "M max",
+        "M min",
+        "M grad max",
+        "n max",
     ]):
         ttk.Label(params_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=5)
         var = state.entry_vars.get(param) or tk.StringVar(master=root)

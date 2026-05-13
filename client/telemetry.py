@@ -7,6 +7,7 @@ from datetime import datetime
 from state import (
     AppState,
     FIELD_ALIASES,
+    REV_GEAR_MAP,
     TELEM_COLUMNS,
     DEFAULT_RS_OHMS,
     DEFAULT_POLE_PAIRS,
@@ -245,6 +246,25 @@ class Telemetry:
         except Exception:
             return default
 
+    @staticmethod
+    def _as_int(x, default=None):
+        try:
+            return int(float(x))
+        except Exception:
+            return default
+
+    @staticmethod
+    def _set_var(var, value, precision=3):
+        if var is None or value is None:
+            return
+        try:
+            if isinstance(value, float):
+                var.set(f"{value:.{precision}f}")
+            else:
+                var.set(str(value))
+        except Exception:
+            pass
+
     def _handle_model_data(self, d: dict):
         """
         Разбираем телеметрию, заполняем:
@@ -265,6 +285,12 @@ class Telemetry:
         Udc = self._as_float(d.get("Udc"))
         Ms = self._as_float(d.get("Ms"))
         ns = self._as_float(d.get("ns"))
+        m_desired = self._as_float(d.get("M_desired"))
+        m_grad_max = self._as_float(d.get("M_grad_max"))
+        n_max = self._as_float(d.get("n_max"))
+        en_is = self._as_int(d.get("En_Is"))
+        gear_ctrl = self._as_int(d.get("GearCtrl"))
+        motor_ctrl = self._as_int(d.get("MotorCtrl"))
 
         igbt_u = self._as_float(d.get("MCU_IGBTTempU"))
         igbt_v = self._as_float(d.get("MCU_IGBTTempV"))
@@ -308,6 +334,39 @@ class Telemetry:
 
         # --- дополнить недостающие величины ---
         # 1) если НЕТ электрической скорости, но есть мех. и пары полюсов → восстановить We
+        self._set_var(getattr(self.state, "Id_var", None), Isd)
+        self._set_var(getattr(self.state, "Iq_var", None), Isq)
+        self._set_var(getattr(self.state, "M_min_var", None), m_min)
+        self._set_var(getattr(self.state, "M_max_var", None), m_max)
+        self._set_var(getattr(self.state, "M_grad_max_var", None), m_grad_max)
+        self._set_var(getattr(self.state, "n_max_var", None), n_max)
+        if ns is not None:
+            self._set_var(getattr(self.state, "speed_var", None), ns)
+        if m_desired is not None:
+            self._set_var(getattr(self.state, "torque_var", None), m_desired)
+        elif Ms is not None:
+            self._set_var(getattr(self.state, "torque_var", None), Ms)
+        if en_is is not None:
+            try:
+                self.state.En_Is_var.set(1 if en_is else 0)
+            except Exception:
+                pass
+        if gear_ctrl is not None:
+            gear = REV_GEAR_MAP.get(gear_ctrl)
+            if gear:
+                try:
+                    self.state.gear_var.set(gear)
+                except Exception:
+                    pass
+        if motor_ctrl is not None:
+            try:
+                if motor_ctrl == 2:
+                    self.state.mode_var.set("speed")
+                elif en_is == 1:
+                    self.state.mode_var.set("currents")
+            except Exception:
+                pass
+
         if We is None and (Wm is not None) and (self._last_pole_pairs is not None):
             try:
                 We = Wm * float(self._last_pole_pairs)
@@ -336,16 +395,23 @@ class Telemetry:
             put("Iq", Iq)
             put("direct current (Idc)", Idc)
             put("Stator current d (Isd)", Isd)
+            put("Stator current q (Isq)", Isq)
+            put("DC voltage (Udc)", Udc)
             put("Torque (Ms)", Ms)
             put("Speed rotation", ns)
             put("Flux", Flux)
             put("Theta", Theta)
             put("Temperature", Temperature)
+            put("Coolant temperature", coolant)
             put("IGBT temperature U", igbt_u)
             put("IGBT temperature V", igbt_v)
             put("IGBT temperature W", igbt_w)
             put("IGBT temperature Max", igbt_max)
             put("Stator temperature", stator)
+            put("M max", m_max)
+            put("M min", m_min)
+            put("M grad max", m_grad_max)
+            put("n max", n_max)
 
         # --- логбук (в таблицу) ---
         row = {
