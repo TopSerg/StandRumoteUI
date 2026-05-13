@@ -2,6 +2,15 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <unordered_map>
+
+struct DbcRuntimeSignalValue {
+    uint32_t messageId = 0;
+    std::string messageName;
+    std::string signalName;
+    uint32_t raw = 0;
+    double physical = 0.0;
+};
 
 struct DataModel {
     // === CAN настройки ===
@@ -99,4 +108,5 @@ struct DataModel {
     float   MCU_DmpCTrqCurr  = 0.0f;  // [Nm]  scale 0.2,  offset -25
     uint8_t MCU_VCUWorkMode  = 0;     // [0..15]
 
+    std::unordered_map<std::string, DbcRuntimeSignalValue> dbcSignals;
 };

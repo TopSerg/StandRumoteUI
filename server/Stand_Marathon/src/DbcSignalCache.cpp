@@ -4,9 +4,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <set>
 
 namespace {
 
@@ -16,6 +18,29 @@ std::string normalizeName(std::string name)
     return name;
 }
 
+std::string normalizeMessageKey(const std::string& name)
+{
+    std::string out;
+    out.reserve(name.size());
+    for (unsigned char ch : name) {
+        if (std::isalnum(ch)) {
+            out.push_back(static_cast<char>(std::tolower(ch)));
+        }
+    }
+    return out;
+}
+
+std::string trim(std::string value)
+{
+    const char* spaces = " \t\r\n";
+    const size_t first = value.find_first_not_of(spaces);
+    if (first == std::string::npos) {
+        return {};
+    }
+    const size_t last = value.find_last_not_of(spaces);
+    return value.substr(first, last - first + 1);
+}
+
 std::ifstream openDbcFile()
 {
     const char* paths[] = {
@@ -23,13 +48,40 @@ std::ifstream openDbcFile()
         "..\\KAMA_FP_EPT_0615.dbc",
         "..\\..\\KAMA_FP_EPT_0615.dbc",
         "..\\..\\..\\KAMA_FP_EPT_0615.dbc",
+        "..\\..\\..\\..\\KAMA_FP_EPT_0615.dbc",
+        "..\\..\\..\\..\\..\\KAMA_FP_EPT_0615.dbc",
         "server\\KAMA_FP_EPT_0615.dbc",
+        "..\\server\\KAMA_FP_EPT_0615.dbc",
     };
 
     for (const char* path : paths) {
         std::ifstream file(path);
         if (file) {
             std::cout << "[DBC] loaded " << path << std::endl;
+            return file;
+        }
+    }
+
+    return {};
+}
+
+std::ifstream openDbcConfigFile()
+{
+    const char* paths[] = {
+        "KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\..\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\..\\..\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\..\\..\\..\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\..\\..\\..\\..\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "server\\KAMA_FP_EPT_0615.dbcconfig.ini",
+        "..\\server\\KAMA_FP_EPT_0615.dbcconfig.ini",
+    };
+
+    for (const char* path : paths) {
+        std::ifstream file(path);
+        if (file) {
+            std::cout << "[DBCCONFIG] loaded " << path << std::endl;
             return file;
         }
     }
@@ -62,6 +114,61 @@ uint32_t physicalToRaw(double value, const DbcSignalDef& def)
         return static_cast<uint32_t>(maxRaw);
     }
     return static_cast<uint32_t>(rounded);
+}
+
+std::vector<std::pair<std::string, bool>> configuredCatalogMessages(
+    const std::unordered_map<std::string, DbcSignalDef>& signalsByName)
+{
+    std::unordered_map<std::string, std::string> dbcNamesByKey;
+    for (const auto& pair : signalsByName) {
+        dbcNamesByKey[normalizeMessageKey(pair.second.messageName)] = pair.second.messageName;
+    }
+
+    std::ifstream file = openDbcConfigFile();
+    if (!file) {
+        std::cerr << "[DBCCONFIG] cannot open KAMA_FP_EPT_0615.dbcconfig.ini" << std::endl;
+        return {};
+    }
+
+    std::vector<std::pair<std::string, bool>> messages;
+    std::string line;
+    bool inMessageDir = false;
+    while (std::getline(file, line)) {
+        line = trim(line);
+        if (line.empty() || line[0] == '#' || line[0] == ';') {
+            continue;
+        }
+        if (line.front() == '[' && line.back() == ']') {
+            inMessageDir = line == "[MESSAGE_DIR]";
+            continue;
+        }
+        if (!inMessageDir) {
+            continue;
+        }
+
+        const size_t eq = line.find('=');
+        if (eq == std::string::npos) {
+            continue;
+        }
+        const std::string configName = trim(line.substr(0, eq));
+        std::string direction = trim(line.substr(eq + 1));
+        std::transform(direction.begin(), direction.end(), direction.begin(), [](unsigned char ch) {
+            return static_cast<char>(std::toupper(ch));
+        });
+        if (direction != "RX" && direction != "TX") {
+            continue;
+        }
+
+        auto dbcIt = dbcNamesByKey.find(normalizeMessageKey(configName));
+        if (dbcIt == dbcNamesByKey.end()) {
+            std::cerr << "[DBCCONFIG] message not found in DBC: " << configName << std::endl;
+            continue;
+        }
+
+        const bool uiTx = direction == "RX";
+        messages.push_back({dbcIt->second, uiTx});
+    }
+    return messages;
 }
 
 } // namespace
@@ -142,8 +249,8 @@ bool DbcSignalCache::initialized() const
 
 const std::vector<DbcRxSignal>* DbcSignalCache::rxSignals(uint32_t messageId) const
 {
-    auto it = rxByMessageId_.find(messageId);
-    if (it == rxByMessageId_.end()) {
+    auto it = allRxByMessageId_.find(messageId);
+    if (it == allRxByMessageId_.end()) {
         return nullptr;
     }
     return &it->second;
@@ -151,8 +258,8 @@ const std::vector<DbcRxSignal>* DbcSignalCache::rxSignals(uint32_t messageId) co
 
 const DbcTxMessage* DbcSignalCache::txMessage(const std::string& commandName) const
 {
-    auto it = txByCommand_.find(commandName);
-    if (it == txByCommand_.end()) {
+    auto it = allTxByCommand_.find(commandName);
+    if (it == allTxByCommand_.end()) {
         return nullptr;
     }
     return &it->second;
@@ -199,6 +306,7 @@ void DbcSignalCache::loadDbc()
         def.maxValue = std::stod(match[9].str());
 
         signalsByName_[def.signalName] = def;
+        defsByMessageId_[def.messageId].push_back(def);
     }
 
     initialized_ = !signalsByName_.empty();
@@ -221,7 +329,8 @@ void DbcSignalCache::selectRx(const std::string& signalName, std::function<void(
     if (!def) {
         return;
     }
-    rxByMessageId_[def->messageId].push_back(DbcRxSignal{*def, std::move(set)});
+    allRxByMessageId_[def->messageId].push_back(DbcRxSignal{*def, std::move(set)});
+    selectedRx_.insert(def->signalName);
 }
 
 void DbcSignalCache::selectTx(
@@ -234,10 +343,118 @@ void DbcSignalCache::selectTx(
         return;
     }
 
-    DbcTxMessage& msg = txByCommand_[commandName];
+    DbcTxMessage& msg = allTxByCommand_[commandName];
     msg.messageId = def->messageId;
     msg.dlc = 8;
     msg.signals.push_back(DbcTxSignal{*def, std::move(get)});
+    selectedTx_.insert(def->signalName);
+}
+
+std::vector<DbcSignalSelectionEntry> DbcSignalCache::selectionCatalog() const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<DbcSignalSelectionEntry> out;
+    std::set<std::pair<bool, std::string>> added;
+
+    auto addEntry = [&](const DbcSignalDef& def, bool tx, const std::string& commandName) {
+        const auto key = std::make_pair(tx, def.signalName);
+        if (!added.insert(key).second) {
+            return;
+        }
+        out.push_back(DbcSignalSelectionEntry{
+            def,
+            tx ? selectedTx_.count(def.signalName) != 0 : selectedRx_.count(def.signalName) != 0,
+            tx,
+            commandName
+        });
+    };
+
+    for (const auto& required : configuredCatalogMessages(signalsByName_)) {
+        for (const auto& pair : defsByMessageId_) {
+            if (pair.second.empty() || pair.second.front().messageName != required.first) {
+                continue;
+            }
+            for (const DbcSignalDef& def : pair.second) {
+                addEntry(def, required.second, {});
+            }
+        }
+    }
+
+    for (const auto& pair : allRxByMessageId_) {
+        for (const DbcRxSignal& signal : pair.second) {
+            addEntry(signal.def, false, {});
+        }
+    }
+    for (const auto& pair : allTxByCommand_) {
+        for (const DbcTxSignal& signal : pair.second.signals) {
+            addEntry(signal.def, true, pair.first);
+        }
+    }
+    std::sort(out.begin(), out.end(), [](const auto& a, const auto& b) {
+        if (a.tx != b.tx) return a.tx < b.tx;
+        if (a.def.messageId != b.def.messageId) return a.def.messageId < b.def.messageId;
+        return a.def.signalName < b.def.signalName;
+    });
+    return out;
+}
+
+std::vector<DbcSignalDef> DbcSignalCache::messageSignals(uint32_t messageId) const
+{
+    auto it = defsByMessageId_.find(messageId);
+    if (it == defsByMessageId_.end()) {
+        return {};
+    }
+    return it->second;
+}
+
+bool DbcSignalCache::setSelection(const std::vector<std::string>& rxNames, const std::vector<std::string>& txNames)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::unordered_set<std::string> requestedRx(rxNames.begin(), rxNames.end());
+    std::unordered_set<std::string> requestedTx(txNames.begin(), txNames.end());
+    std::unordered_set<std::string> rx;
+    std::unordered_set<std::string> tx;
+
+    auto expandMessage = [&](const DbcSignalDef& def, bool isTx) {
+        auto it = defsByMessageId_.find(def.messageId);
+        if (it == defsByMessageId_.end()) {
+            return;
+        }
+        for (const DbcSignalDef& messageDef : it->second) {
+            if (isTx) {
+                tx.insert(messageDef.signalName);
+            } else {
+                rx.insert(messageDef.signalName);
+            }
+        }
+    };
+
+    for (const auto& pair : defsByMessageId_) {
+        for (const DbcSignalDef& def : pair.second) {
+            if (requestedRx.count(def.signalName) != 0) {
+                expandMessage(def, false);
+            }
+            if (requestedTx.count(def.signalName) != 0) {
+                expandMessage(def, true);
+            }
+        }
+    }
+
+    selectedRx_ = std::move(rx);
+    selectedTx_ = std::move(tx);
+    return true;
+}
+
+bool DbcSignalCache::isRxSelected(const std::string& signalName) const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return selectedRx_.count(signalName) != 0;
+}
+
+bool DbcSignalCache::isTxSelected(const std::string& signalName) const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return selectedTx_.count(signalName) != 0;
 }
 
 void DbcSignalCache::buildDefaultSelection()

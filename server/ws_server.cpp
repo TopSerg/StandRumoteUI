@@ -20,6 +20,8 @@
 #include "CommandSender.h"
 #include "ConfigManager.h"
 #include "CANInterface.h"
+#include "DbcSignalCache.h"
+#include "SignalLogger.h"
 
 #include <fstream>
 #include <mutex>
@@ -133,6 +135,9 @@ std::string serializeData() {
     j["Brake_active"] = model.Brake_active;
     j["TCS_active"] = model.TCS_active;
     j["MCU_IGBTTempU"] = model.MCU_IGBTTempU;
+    j["MCU_IGBTTempV"] = model.MCU_IGBTTempV;
+    j["MCU_IGBTTempW"] = model.MCU_IGBTTempW;
+    j["MCU_IGBTTempMax"] = model.MCU_IGBTTempMax;
     j["MCU_TempCurrStr"] = model.MCU_TempCurrStr;
 
     // ➕ Новые поля из MCU_CurrentVoltage (0x4F6)
@@ -153,6 +158,35 @@ std::string serializeData() {
     j["ZVTimeStamp"] = model.ZVTimeStamp;
     j["ZVThetaCorr"] = model.ZVThetaCorr;
     j["json_period_ms"] = g_json_period_ms.load();
+    j["dbc_signals"] = json::array();
+    DbcSignalCache& dbcCache = DbcSignalCache::instance();
+    for (const auto& pair : model.dbcSignals) {
+        const DbcRuntimeSignalValue& value = pair.second;
+        if (!dbcCache.isRxSelected(value.signalName)) {
+            continue;
+        }
+        j["dbc_signals"].push_back({
+            {"direction", "RX"},
+            {"message_id", value.messageId},
+            {"message_name", value.messageName},
+            {"signal_name", value.signalName},
+            {"raw", value.raw},
+            {"physical", value.physical},
+        });
+    }
+    for (const LoggedSignalSample& sample : SignalLogger::instance().selectedSamples()) {
+        if (sample.direction == "RX") {
+            continue;
+        }
+        j["dbc_signals"].push_back({
+            {"direction", sample.direction},
+            {"message_id", sample.messageId},
+            {"message_name", sample.messageName},
+            {"signal_name", sample.signalName},
+            {"raw", sample.raw},
+            {"physical", sample.physical},
+        });
+    }
 
     return j.dump();
 }
@@ -182,7 +216,29 @@ void sendCANFrame(websocket::stream<tcp::socket>& ws, const std::string& directi
     }
 }
 
-void handleCommand(const json& j) {
+static json signal_catalog_json()
+{
+    json response;
+    response["type"] = "signal_catalog";
+    response["signals"] = json::array();
+    for (const DbcSignalSelectionEntry& entry : DbcSignalCache::instance().selectionCatalog()) {
+        response["signals"].push_back({
+            {"direction", entry.tx ? "tx" : "rx"},
+            {"selected", entry.selected},
+            {"command", entry.commandName},
+            {"message_id", entry.def.messageId},
+            {"message_name", entry.def.messageName},
+            {"signal_name", entry.def.signalName},
+            {"start_bit", entry.def.startBit},
+            {"length", entry.def.length},
+            {"factor", entry.def.factor},
+            {"offset", entry.def.offset},
+        });
+    }
+    return response;
+}
+
+void handleCommand(const json& j, std::vector<json>& responses) {
     std::string cmd = j.value("cmd", "");
 
 
@@ -214,6 +270,19 @@ void handleCommand(const json& j) {
         }
         g_json_period_ms.store(period_ms);
         std::cout << "[WS] JSON period set to " << period_ms << " ms" << std::endl;
+    } else if (cmd == "GetSignalCatalog") {
+        responses.push_back(signal_catalog_json());
+    } else if (cmd == "SetSignalSelection") {
+        std::vector<std::string> rx;
+        std::vector<std::string> tx;
+        if (j.contains("rx") && j["rx"].is_array()) {
+            rx = j["rx"].get<std::vector<std::string>>();
+        }
+        if (j.contains("tx") && j["tx"].is_array()) {
+            tx = j["tx"].get<std::vector<std::string>>();
+        }
+        DbcSignalCache::instance().setSelection(rx, tx);
+        responses.push_back(signal_catalog_json());
     } else {
         std::cerr << "[Warn] Unknown command: " << cmd << std::endl;
     }
@@ -230,8 +299,15 @@ void do_session(tcp::socket socket) {
         std::cout << "[WS] Client connected" << std::endl;
 
         std::atomic<bool> running{true};
+        auto ws_write_mutex = std::make_shared<std::mutex>();
 
-        std::thread updater([ws, &running]() {
+        {
+            const std::string payload = signal_catalog_json().dump();
+            std::lock_guard<std::mutex> writeLock(*ws_write_mutex);
+            ws->write(boost::asio::buffer(payload));
+        }
+
+        std::thread updater([ws, ws_write_mutex, &running]() {
             auto last_json_send = clock1::now();
             while (running) {
                 try {
@@ -241,6 +317,7 @@ void do_session(tcp::socket socket) {
                     if(now1 - last_json_send >= period){
                         std::string data = serializeData();
                         log_ws_tx(data);
+                        std::lock_guard<std::mutex> writeLock(*ws_write_mutex);
                         ws->write(boost::asio::buffer(data));
                         last_json_send = now1;
                     }
@@ -267,7 +344,13 @@ void do_session(tcp::socket socket) {
 
                 const json jei = j;
 
-                handleCommand(j);
+                std::vector<json> responses;
+                handleCommand(j, responses);
+                for (const json& response : responses) {
+                    const std::string payload = response.dump();
+                    std::lock_guard<std::mutex> writeLock(*ws_write_mutex);
+                    ws->write(boost::asio::buffer(payload));
+                }
 
                 log_can_json(jei);
             }

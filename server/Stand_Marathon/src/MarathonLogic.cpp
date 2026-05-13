@@ -1,6 +1,7 @@
 //Stand_Marathon/src/MarathonLogic.cpp
 #include "MarathonLogic.h"
 #include "DbcSignalCache.h"
+#include "SignalLogger.h"
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -67,9 +68,36 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
     }
 
     if (kUseDbcRuntimeParsing) {
-        const std::vector<DbcRxSignal>* cachedSignals = DbcSignalCache::instance().rxSignals(msg.id);
+        DbcSignalCache& cache = DbcSignalCache::instance();
+        const std::vector<DbcSignalDef> allDefs = cache.messageSignals(msg.id);
+        for (const DbcSignalDef& def : allDefs) {
+            const uint32_t raw = unpackDbcSignal(msg.data, def.startBit, def.length);
+            const double physical = static_cast<double>(raw) * def.factor + def.offset;
+            const bool selected = cache.isRxSelected(def.signalName);
+            if (selected) {
+                DbcRuntimeSignalValue& value = data.dbcSignals[def.signalName];
+                value.messageId = def.messageId;
+                value.messageName = def.messageName;
+                value.signalName = def.signalName;
+                value.raw = raw;
+                value.physical = physical;
+            } else {
+                data.dbcSignals.erase(def.signalName);
+            }
+            SignalLogger::instance().log(
+                "RX",
+                def,
+                raw,
+                physical,
+                selected);
+        }
+
+        const std::vector<DbcRxSignal>* cachedSignals = cache.rxSignals(msg.id);
         if (cachedSignals) {
             for (const DbcRxSignal& signal : *cachedSignals) {
+                if (!cache.isRxSelected(signal.def.signalName)) {
+                    continue;
+                }
                 const uint32_t raw = unpackDbcSignal(msg.data, signal.def.startBit, signal.def.length);
                 const double physical = static_cast<double>(raw) * signal.def.factor + signal.def.offset;
                 signal.set(data, physical);

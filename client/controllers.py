@@ -80,6 +80,7 @@ class Controllers:
             client.start()
             self.ui_log("[WS] connect:", url)
             self.root.after(500, self._apply_json_period_when_connected)
+            self.root.after(700, self.request_signal_catalog)
         except Exception as e:
             self.ui_log("[WS] start failed:", e, "ERR")
 
@@ -142,6 +143,8 @@ class Controllers:
             "clear_log": self.clear_log,
             "export_csv": self.export_csv,
             "send_fake_can": self.send_fake_can_from_fields,
+            "apply_signal_selection": self.apply_signal_selection,
+            "toggle_signal_selection": self.toggle_signal_selection,
         }
 
     # ---- отправка «сервисных» команд ----
@@ -185,6 +188,108 @@ class Controllers:
             return
         if attempts_left > 0:
             self.root.after(500, lambda: self._apply_json_period_when_connected(attempts_left - 1))
+
+    def request_signal_catalog(self) -> None:
+        if not self.client:
+            return
+        try:
+            if not self.client.is_connected():
+                self.root.after(500, self.request_signal_catalog)
+                return
+        except Exception:
+            return
+        self.client.send_json_threadsafe({"cmd": "GetSignalCatalog"})
+
+    def toggle_signal_selection(self, direction: str, message_id_or_signal_name: str) -> None:
+        bucket = (
+            self.state.selected_tx_signals
+            if direction == "tx"
+            else self.state.selected_rx_signals
+        )
+        catalog = getattr(self.state, "signal_catalog", []) or []
+        clicked = None
+        for item in catalog:
+            if item.get("direction") != direction:
+                continue
+            if (
+                str(item.get("message_id")) == str(message_id_or_signal_name)
+                or str(item.get("signal_name")) == str(message_id_or_signal_name)
+            ):
+                clicked = item
+                break
+        if not clicked:
+            return
+
+        message_id = clicked.get("message_id")
+        message_signals = [
+            str(item.get("signal_name"))
+            for item in catalog
+            if item.get("direction") == direction and item.get("message_id") == message_id
+        ]
+        if not message_signals:
+            return
+
+        enable = any(name not in bucket for name in message_signals)
+        if enable:
+            bucket.update(message_signals)
+            self._ensure_log_columns(direction, message_signals)
+        else:
+            for name in message_signals:
+                bucket.discard(name)
+        refresh = getattr(self.views, "refresh_signal_trees", None)
+        if callable(refresh):
+            refresh()
+        self.apply_signal_selection()
+
+    @staticmethod
+    def _dbc_log_column(direction: str, signal_name: str) -> str:
+        direction = str(direction or "").upper()
+        signal_name = str(signal_name or "").strip()
+        return f"{direction}.{signal_name}" if direction and signal_name else signal_name
+
+    def _ensure_log_columns(self, direction: str, signal_names: list[str]) -> None:
+        dynamic = getattr(self.state, "dynamic_log_columns", None)
+        if dynamic is None:
+            dynamic = []
+            self.state.dynamic_log_columns = dynamic
+        changed = False
+        for name in signal_names:
+            col = self._dbc_log_column(direction, name)
+            if col and col not in dynamic:
+                dynamic.append(col)
+                changed = True
+        if changed:
+            self._sync_log_tree_columns()
+
+    def _sync_log_tree_columns(self) -> None:
+        if not self.views:
+            return
+        tree = getattr(self.views, "telem_tree", None)
+        if tree is None:
+            return
+        columns = list(TELEM_COLUMNS) + list(getattr(self.state, "dynamic_log_columns", []))
+        try:
+            tree.configure(columns=columns)
+            for col in columns:
+                tree.heading(col, text=col)
+                width = 100 if col in TELEM_COLUMNS else max(120, min(220, len(col) * 8))
+                tree.column(col, width=width, anchor="center")
+        except Exception:
+            pass
+
+    def apply_signal_selection(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        self.client.send_json_threadsafe({
+            "cmd": "SetSignalSelection",
+            "rx": sorted(self.state.selected_rx_signals),
+            "tx": sorted(self.state.selected_tx_signals),
+        })
+        self.ui_log(
+            f"[UI] Signal selection applied: RX={len(self.state.selected_rx_signals)} "
+            f"TX={len(self.state.selected_tx_signals)}"
+        )
 
     # ---- основная кнопка "Отправить" ----
 
@@ -525,11 +630,12 @@ class Controllers:
     def export_csv(self) -> None:
         # простой экспорт в файл рядом с клиентом
         fname = f"logbook_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        columns = list(TELEM_COLUMNS) + list(getattr(self.state, "dynamic_log_columns", []))
         with open(fname, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f, delimiter=";")
-            w.writerow(TELEM_COLUMNS)
+            w.writerow(columns)
             for row in self.state.log_rows:
-                w.writerow([row.get(k, "") for k in TELEM_COLUMNS])
+                w.writerow([row.get(k, "") for k in columns])
         self.ui_log(f"💾 exported: {fname}")
 
     # ---- утилита для отправки тестового CAN из полей (как в исходнике) ----

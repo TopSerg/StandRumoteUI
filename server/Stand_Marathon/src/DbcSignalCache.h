@@ -4,6 +4,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <mutex>
+#include <unordered_set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +40,13 @@ struct DbcTxMessage {
     std::vector<DbcTxSignal> signals;
 };
 
+struct DbcSignalSelectionEntry {
+    DbcSignalDef def;
+    bool selected = false;
+    bool tx = false;
+    std::string commandName;
+};
+
 class DbcSignalCache {
 public:
     static DbcSignalCache& instance();
@@ -45,6 +54,11 @@ public:
     const std::vector<DbcRxSignal>* rxSignals(uint32_t messageId) const;
     const DbcTxMessage* txMessage(const std::string& commandName) const;
     bool initialized() const;
+    std::vector<DbcSignalSelectionEntry> selectionCatalog() const;
+    std::vector<DbcSignalDef> messageSignals(uint32_t messageId) const;
+    bool setSelection(const std::vector<std::string>& rxNames, const std::vector<std::string>& txNames);
+    bool isRxSelected(const std::string& signalName) const;
+    bool isTxSelected(const std::string& signalName) const;
 
 private:
     DbcSignalCache();
@@ -59,11 +73,14 @@ private:
         std::function<double(const DataModel&)> get);
 
     bool initialized_ = false;
+    mutable std::mutex mutex_;
     std::unordered_map<std::string, DbcSignalDef> signalsByName_;
-    std::unordered_map<uint32_t, std::vector<DbcRxSignal>> rxByMessageId_;
-    std::unordered_map<std::string, DbcTxMessage> txByCommand_;
+    std::unordered_map<uint32_t, std::vector<DbcSignalDef>> defsByMessageId_;
+    std::unordered_map<uint32_t, std::vector<DbcRxSignal>> allRxByMessageId_;
+    std::unordered_map<std::string, DbcTxMessage> allTxByCommand_;
+    std::unordered_set<std::string> selectedRx_;
+    std::unordered_set<std::string> selectedTx_;
 };
 
 uint32_t unpackDbcSignal(const uint8_t* data, uint8_t startBit, uint8_t length);
 void packDbcSignal(uint8_t* data, uint32_t value, uint8_t startBit, uint8_t length);
-

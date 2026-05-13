@@ -1,6 +1,7 @@
 //Stand_Marathon/src/CommandSender.cpp
 #include "CommandSender.h"
 #include "DbcSignalCache.h"
+#include "SignalLogger.h"
 #include <iostream>
 
 #include <cstdio>
@@ -226,7 +227,11 @@ bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, 
 
     uint8_t payload[8] = {0};
     const bool logTx = logTxEnabled();
+    DbcSignalCache& cache = DbcSignalCache::instance();
     for (const DbcTxSignal& signal : msg->signals) {
+        if (!cache.isTxSelected(signal.def.signalName)) {
+            continue;
+        }
         const double physical = signal.get(data);
         const double rawDouble = (physical - signal.def.offset) / signal.def.factor;
         uint32_t raw = 0;
@@ -255,6 +260,17 @@ bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, 
                 signal.def.factor,
                 signal.def.offset);
         }
+    }
+
+    for (const DbcSignalDef& def : cache.messageSignals(msg->messageId)) {
+        const uint32_t raw = unpackDbcSignal(payload, def.startBit, def.length);
+        const double physical = static_cast<double>(raw) * def.factor + def.offset;
+        SignalLogger::instance().log(
+            "TX",
+            def,
+            raw,
+            physical,
+            cache.isTxSelected(def.signalName));
     }
 
     can.send(msg->messageId, payload, msg->dlc);

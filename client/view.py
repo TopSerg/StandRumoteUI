@@ -7,9 +7,6 @@ from dataclasses import dataclass
 from datetime import datetime
 import csv
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
-
 # ---- наши модули ----
 from state import AppState as State, PAD, TELEM_COLUMNS
 
@@ -35,6 +32,7 @@ class ViewRefs:
     log_frame: ttk.Frame
     trends_frame: ttk.Frame
     maps_frame: ttk.Frame
+    signals_frame: ttk.Frame
 
     # Control
     controls_container: ttk.Frame
@@ -54,18 +52,20 @@ class ViewRefs:
     # Logbook
     telem_tree: ttk.Treeview
     log_box: Text
+    rx_signal_tree: ttk.Treeview
+    tx_signal_tree: ttk.Treeview
 
     # Trends (оси/линии)
-    fig_trends: Figure
-    canvas_trends: FigureCanvasTkAgg
+    fig_trends: any
+    canvas_trends: any
     ax1: any; l_ns: any
     ax2: any; l_ms: any
     ax3: any; l_idc: any; l_isd: any
     ax4: any; l_id: any; l_iq: any; l_ud: any; l_uq: any
 
     # Maps
-    fig_maps: Figure
-    canvas_maps: FigureCanvasTkAgg
+    fig_maps: any
+    canvas_maps: any
     ax5a: any; sc_ld: any
     ax5b: any; sc_lq: any
     ax6: any; ax6_right: any; ln_torque: any; ln_pmech: any; ln_pelec: any
@@ -188,6 +188,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.log_enabled = bv(state.log_enabled, True)
     state.log_rows = getattr(state, "log_rows", []) or []
     state.max_rows = getattr(state, "max_rows", 5000) or 5000
+    state.dynamic_log_columns = getattr(state, "dynamic_log_columns", []) or []
 
     # 3) Toolbar
     toolbar = ttk.Frame(root, style="Toolbar.TFrame")
@@ -241,7 +242,8 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     ind_frame    = ttk.Frame(notebook); notebook.add(ind_frame,  text="Indication")
     log_frame    = ttk.Frame(notebook); notebook.add(log_frame,  text="Logbook")
     trends_frame = ttk.Frame(notebook); notebook.add(trends_frame, text="Trends")
-    maps_frame   = ttk.Frame(notebook); notebook.add(maps_frame,   text="Maps")
+    maps_frame   = ttk.Frame(notebook)
+    signals_frame = ttk.Frame(notebook); notebook.add(signals_frame, text="Signals")
     auto_frame = ttk.Frame(notebook); notebook.add(auto_frame, text="AutoCal")
 
     # === Control ===
@@ -363,7 +365,10 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         "Torque (Ms)",
         "direct current (Idc)",
         "Stator current d (Isd)",
-        "IGBT temperature",
+        "IGBT temperature U",
+        "IGBT temperature V",
+        "IGBT temperature W",
+        "IGBT temperature Max",
         "Stator temperature",
     ]):
         ttk.Label(params_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=5)
@@ -480,9 +485,11 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         telem_tree.heading(col, text=col)
         telem_tree.column(col, width=100, anchor="center")
     ys = ttk.Scrollbar(logbook_top, orient="vertical", command=telem_tree.yview)
-    telem_tree.configure(yscroll=ys.set)
-    telem_tree.pack(side="left", fill="both", expand=True)
+    xs = ttk.Scrollbar(logbook_top, orient="horizontal", command=telem_tree.xview)
+    telem_tree.configure(yscroll=ys.set, xscroll=xs.set)
     ys.pack(side="right", fill="y")
+    xs.pack(side="bottom", fill="x")
+    telem_tree.pack(side="left", fill="both", expand=True)
     state.telem_tree = telem_tree
 
     log_events = ttk.LabelFrame(log_frame, text="Events")
@@ -491,94 +498,198 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     log_box.pack(fill="both", padx=6, pady=6, expand=True)
     state.log_box = log_box
 
+    # === Signals ===
+    signals_inner = ttk.Frame(signals_frame)
+    signals_inner.pack(fill="both", expand=True, padx=10, pady=10)
+
+    signals_toolbar = ttk.Frame(signals_inner)
+    signals_toolbar.pack(fill="x", pady=(0, 8))
+    ttk.Button(
+        signals_toolbar,
+        text="Apply selection",
+        command=handlers.get("apply_signal_selection", lambda: None),
+    ).pack(side="right")
+
+    panes = ttk.Panedwindow(signals_inner, orient="horizontal")
+    panes.pack(fill="both", expand=True)
+
+    rx_wrap = ttk.LabelFrame(panes, text="RX")
+    tx_wrap = ttk.LabelFrame(panes, text="TX")
+    panes.add(rx_wrap, weight=1)
+    panes.add(tx_wrap, weight=1)
+
+    signal_cols = ("enabled", "id", "message", "count", "signals")
+    rx_signal_tree = ttk.Treeview(rx_wrap, columns=signal_cols, show="headings", height=22)
+    tx_signal_tree = ttk.Treeview(tx_wrap, columns=signal_cols, show="headings", height=22)
+    for tree in (rx_signal_tree, tx_signal_tree):
+        tree.heading("enabled", text="On")
+        tree.heading("id", text="ID")
+        tree.heading("message", text="Message")
+        tree.heading("count", text="Signals")
+        tree.heading("signals", text="Names")
+        tree.column("enabled", width=48, anchor="center")
+        tree.column("id", width=72, anchor="center")
+        tree.column("message", width=150, anchor="w")
+        tree.column("count", width=70, anchor="center")
+        tree.column("signals", width=330, anchor="w")
+        tree.pack(side="left", fill="both", expand=True)
+        ys_sig = ttk.Scrollbar(tree.master, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=ys_sig.set)
+        ys_sig.pack(side="right", fill="y")
+
+    def _refresh_signal_trees():
+        for tree in (rx_signal_tree, tx_signal_tree):
+            for iid in tree.get_children():
+                tree.delete(iid)
+        groups = {}
+        for item in getattr(state, "signal_catalog", []):
+            direction = item.get("direction")
+            message_id = item.get("message_id")
+            key = (direction, message_id)
+            groups.setdefault(key, {
+                "direction": direction,
+                "message_id": message_id,
+                "message_name": item.get("message_name", ""),
+                "signals": [],
+            })
+            groups[key]["signals"].append(str(item.get("signal_name", "")))
+
+        for group in sorted(groups.values(), key=lambda g: (g["direction"] or "", int(g["message_id"] or 0))):
+            direction = group["direction"]
+            tree = tx_signal_tree if direction == "tx" else rx_signal_tree
+            signal_names = group["signals"]
+            selected = (
+                all(name in state.selected_tx_signals for name in signal_names)
+                if direction == "tx"
+                else all(name in state.selected_rx_signals for name in signal_names)
+            )
+            tree.insert(
+                "",
+                "end",
+                iid=f"{direction}:{group['message_id']}",
+                values=(
+                    "yes" if selected else "no",
+                    f"0x{int(group['message_id'] or 0):03X}",
+                    group["message_name"],
+                    str(len(signal_names)),
+                    ", ".join(signal_names),
+                ),
+            )
+
+    def _toggle_signal_from_tree(tree, direction: str, event):
+        iid = tree.identify_row(event.y)
+        if not iid:
+            return
+        message_id = iid.split(":", 1)[1]
+        handlers.get("toggle_signal_selection", lambda *_: None)(direction, message_id)
+
+    rx_signal_tree.bind("<Double-1>", lambda e: _toggle_signal_from_tree(rx_signal_tree, "rx", e))
+    tx_signal_tree.bind("<Double-1>", lambda e: _toggle_signal_from_tree(tx_signal_tree, "tx", e))
+
     root.bind_all("<Control-l>", lambda e: state.log_enabled.set(not state.log_enabled.get()))
     root.bind_all("<Control-e>", lambda e: handlers.get("export_csv", lambda: _export_csv_default(state))())
     root.bind_all("<Control-Shift-C>", lambda e: handlers.get("clear_log", lambda: _clear_log_default(state))())
 
-    # === Trends ===
-    trends_container = ttk.Frame(trends_frame); trends_container.pack(fill="both", expand=True, padx=10, pady=10)
+    # === Trends / Maps ===
+    # Matplotlib грузится только при первом открытии соответствующей вкладки.
+    trends_container = ttk.Frame(trends_frame)
+    trends_container.pack(fill="both", expand=True, padx=10, pady=10)
+    maps_container = ttk.Frame(maps_frame)
+    fig_trends = canvas_trends = None
+    ax1 = ax2 = ax3 = ax4 = ax5 = None
+    l_ns = l_ms = l_idc = l_isd = l_id = l_iq = l_ud = l_uq = l_theta = None
 
-    fig_trends = Figure(figsize=(8, 5), dpi=100)
-    ax1 = fig_trends.add_subplot(221); ax1.set_title("ns (rpm)"); ax1.grid(True)
-    ax2 = fig_trends.add_subplot(222); ax2.set_title("Ms (N·m)"); ax2.grid(True)
-    ax3 = fig_trends.add_subplot(223); ax3.set_title("Idc/Isd (A)"); ax3.grid(True)
-    ax4 = fig_trends.add_subplot(224); ax4.set_title("Id/Iq & Ud/Uq"); ax4.grid(True)
+    fig_maps = canvas_maps = None
+    ax5a = ax5b = ax6 = ax6_right = None
+    sc_ld = sc_lq = ln_torque = ln_pmech = ln_pelec = None
 
-    l_ns,   = ax1.plot([], [])
-    l_ms,   = ax2.plot([], [])
-    l_idc,  = ax3.plot([], [], label="Idc")
-    l_isd,  = ax3.plot([], [], label="Isd"); ax3.legend()
+    def _ensure_trends():
+        nonlocal fig_trends, canvas_trends
+        nonlocal ax1, ax2, ax3, ax4, ax5
+        nonlocal l_ns, l_ms, l_idc, l_isd, l_id, l_iq, l_ud, l_uq, l_theta
+        if fig_trends is not None:
+            return
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.figure import Figure
 
-    l_id,   = ax4.plot([], [], label="Id")
-    l_iq,   = ax4.plot([], [], label="Iq")
-    l_ud,   = ax4.plot([], [], label="Ud", linestyle="--")
-    l_uq,   = ax4.plot([], [], label="Uq", linestyle="--"); ax4.legend()
+        fig_trends = Figure(figsize=(8, 5), dpi=100)
+        ax1 = fig_trends.add_subplot(111)
+        ax1.set_title("Theta vs TimeStamp")
+        ax1.set_xlabel("TimeStamp")
+        ax1.set_ylabel("Theta")
+        ax1.grid(True)
+        l_theta, = ax1.plot([], [], label="Theta")
 
-    canvas_trends = FigureCanvasTkAgg(fig_trends, master=trends_container)
-    canvas_trends.get_tk_widget().pack(fill="both", expand=True)
+        canvas_trends = FigureCanvasTkAgg(fig_trends, master=trends_container)
+        canvas_trends.get_tk_widget().pack(fill="both", expand=True)
+        state.trends = {
+            "figure": fig_trends,
+            "canvas": canvas_trends,
+            "axes": [ax1],
+            "lines": [l_theta],
+            "ax1": ax1, "l_theta": l_theta,
+        }
 
-    # === Maps ===
-    maps_container = ttk.Frame(maps_frame); maps_container.pack(fill="both", expand=True, padx=10, pady=10)
+    def _ensure_maps():
+        nonlocal fig_maps, canvas_maps
+        nonlocal ax5a, ax5b, ax6, ax6_right
+        nonlocal sc_ld, sc_lq, ln_torque, ln_pmech, ln_pelec
+        if fig_maps is not None:
+            return
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.figure import Figure
 
-    fig_maps = Figure(figsize=(8, 5), dpi=100)
-    ax5a = fig_maps.add_subplot(221)  # Ld(Id)
-    ax5b = fig_maps.add_subplot(222)  # Lq(Iq)
-    ax6  = fig_maps.add_subplot(212)  # Torque & Power vs RPM
+        fig_maps = Figure(figsize=(8, 5), dpi=100)
+        ax5a = fig_maps.add_subplot(221)
+        ax5b = fig_maps.add_subplot(222)
+        ax6 = fig_maps.add_subplot(212)
+        ax5a.set_title("Ld vs Id"); ax5a.set_xlabel("Id, A"); ax5a.set_ylabel("Ld, H"); ax5a.grid(True)
+        ax5b.set_title("Lq vs Iq"); ax5b.set_xlabel("Iq, A"); ax5b.set_ylabel("Lq, H"); ax5b.grid(True)
+        ax6.set_title("Torque & Power vs RPM"); ax6.set_xlabel("RPM"); ax6.grid(True)
+        ax6_right = ax6.twinx(); ax6.set_ylabel("Torque, N·m"); ax6_right.set_ylabel("Power, kW")
 
-    ax5a.set_title("Ld vs Id"); ax5a.set_xlabel("Id, A"); ax5a.set_ylabel("Ld, H"); ax5a.grid(True)
-    ax5b.set_title("Lq vs Iq"); ax5b.set_xlabel("Iq, A"); ax5b.set_ylabel("Lq, H"); ax5b.grid(True)
-    ax6.set_title("Torque & Power vs RPM"); ax6.set_xlabel("RPM"); ax6.grid(True)
-    ax6_right = ax6.twinx(); ax6.set_ylabel("Torque, N·m"); ax6_right.set_ylabel("Power, kW")
+        sc_ld = ax5a.plot([], [], linestyle="", marker=".", markersize=3)[0]
+        sc_lq = ax5b.plot([], [], linestyle="", marker=".", markersize=3)[0]
+        ln_torque, = ax6.plot([], [], label="Torque (N·m)")
+        ln_pmech, = ax6_right.plot([], [], label="P_mech (kW)")
+        ln_pelec, = ax6_right.plot([], [], label="P_elec (kW)", linestyle="--")
+        ax6.legend([ln_torque, ln_pmech, ln_pelec], ["Torque (N·m)", "P_mech (kW)", "P_elec (kW)"])
 
-    sc_ld = ax5a.plot([], [], linestyle="", marker=".", markersize=3)[0]
-    sc_lq = ax5b.plot([], [], linestyle="", marker=".", markersize=3)[0]
-    ln_torque, = ax6.plot([], [], label="Torque (N·m)")
-    ln_pmech,  = ax6_right.plot([], [], label="P_mech (kW)")
-    ln_pelec,  = ax6_right.plot([], [], label="P_elec (kW)", linestyle="--")
-    ax6.legend([ln_torque, ln_pmech, ln_pelec], ["Torque (N·m)", "P_mech (kW)", "P_elec (kW)"])
+        canvas_maps = FigureCanvasTkAgg(fig_maps, master=maps_container)
+        canvas_maps.get_tk_widget().pack(fill="both", expand=True)
+        state.maps = {
+            "figure": fig_maps, "canvas": canvas_maps,
+            "ax5a": ax5a, "sc_ld": sc_ld,
+            "ax5b": ax5b, "sc_lq": sc_lq,
+            "ax6": ax6, "ax6_right": ax6_right,
+            "ln_torque": ln_torque, "ln_pmech": ln_pmech, "ln_pelec": ln_pelec,
+        }
 
-    canvas_maps = FigureCanvasTkAgg(fig_maps, master=maps_container)
-    canvas_maps.get_tk_widget().pack(fill="both", expand=True)
+    def _on_tab_changed(_event=None):
+        selected = notebook.select()
+        if selected == str(trends_frame):
+            _ensure_trends()
+
+    notebook.bind("<<NotebookTabChanged>>", _on_tab_changed, add="+")
 
     # стартовая конфигурация единого ползунка + спинбокса
     _configure_main_slider(state.mode_var.get())
 
     # Выдаём ссылки на графики/оси в state — чтобы контроллер мог обновлять
-    state.trends = {
-        "figure": fig_trends,
-        "canvas": canvas_trends,
-
-        # список осей
-        "axes": [ax1, ax2, ax3, ax4],
-
-        # список линий в ожидаемом порядке:
-        # 0: ns, 1: Ms, 2: Idc, 3: Isd, 4: Id, 5: Iq, 6: Ud, 7: Uq
-        "lines": [l_ns, l_ms, l_idc, l_isd, l_id, l_iq, l_ud, l_uq],
-
-        # именные ссылки — просто для удобства (можешь оставить или убрать)
-        "ax1": ax1, "ax2": ax2, "ax3": ax3, "ax4": ax4,
-        "l_ns": l_ns, "l_ms": l_ms,
-        "l_idc": l_idc, "l_isd": l_isd,
-        "l_id": l_id, "l_iq": l_iq, "l_ud": l_ud, "l_uq": l_uq,
-    }
-    state.maps = {
-        "figure": fig_maps, "canvas": canvas_maps,
-        "ax5a": ax5a, "sc_ld": sc_ld,
-        "ax5b": ax5b, "sc_lq": sc_lq,
-        "ax6": ax6, "ax6_right": ax6_right,
-        "ln_torque": ln_torque, "ln_pmech": ln_pmech, "ln_pelec": ln_pelec,
-    }
+    state.trends = {}
+    state.maps = {}
 
     view = ViewRefs(
         root=root, style=style,
         toolbar=toolbar, conn_pill_wrap=pill_wrap,
         notebook=notebook, main_frame=main_frame, ind_frame=ind_frame, log_frame=log_frame,
-        trends_frame=trends_frame, maps_frame=maps_frame,
+        trends_frame=trends_frame, maps_frame=maps_frame, signals_frame=signals_frame,
         controls_container=controls_container, mode_frame=mode_frame, currents_frame=currents_frame,
         limits_frame=limits_frame, params_frame=params_frame, can_frame=can_frame,
         voltage_frame=voltage_frame, flux_frame=flux_frame,
         slider_frame=slider_frame, main_slider=main_slider, main_entry=main_entry,
         telem_tree=telem_tree, log_box=log_box,
+        rx_signal_tree=rx_signal_tree, tx_signal_tree=tx_signal_tree,
         fig_trends=fig_trends, canvas_trends=canvas_trends,
         ax1=ax1, l_ns=l_ns, ax2=ax2, l_ms=l_ms, ax3=ax3, l_idc=l_idc, l_isd=l_isd,
         ax4=ax4, l_id=l_id, l_iq=l_iq, l_ud=l_ud, l_uq=l_uq,
@@ -596,6 +707,9 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     }
     # опционально: дать контроллеру прямой вызов
     view.configure_main_slider = _configure_main_slider
+    view.refresh_signal_trees = _refresh_signal_trees
+    view.ensure_trends = _ensure_trends
+    view.ensure_maps = _ensure_maps
 
     # если контроллер хочет что-то сделать после сборки view
     after_hook = handlers.get("after_view_built")
@@ -650,11 +764,12 @@ def _clear_log_default(state: State):
 
 def _export_csv_default(state: State):
     fname = f"logbook_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    columns = list(TELEM_COLUMNS) + list(getattr(state, "dynamic_log_columns", []))
     with open(fname, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(TELEM_COLUMNS)
+        w.writerow(columns)
         for row in state.log_rows:
-            w.writerow([row.get(k, "") for k in TELEM_COLUMNS])
+            w.writerow([row.get(k, "") for k in columns])
     _ui_log(state, f"💾 exported: {fname}")
 
 

@@ -73,6 +73,11 @@ class AppState:
         self.log_enabled = tk.BooleanVar(master=root, value=True)
         self.log_rows: list[dict] = []   # список словарей
         self.max_rows: int = 5000        # ограничение на длину буфера/таблицы
+        self.signal_catalog: list[dict] = []
+        self.selected_rx_signals: set[str] = set()
+        self.selected_tx_signals: set[str] = set()
+        self.latest_dbc_signals: list[dict] = []
+        self.dynamic_log_columns: list[str] = []
 
         # --- Режим/передача и включения ---
         self.gear_var = tk.StringVar(master=root, value="N")       # "D" / "R" / "N"
@@ -107,6 +112,8 @@ class AppState:
         self.trend_Uq = deque(maxlen=TREND_CAP)
         self.trend_Id = deque(maxlen=TREND_CAP)
         self.trend_Iq = deque(maxlen=TREND_CAP)
+        self.trend_theta_ts = deque(maxlen=TREND_CAP)
+        self.trend_theta = deque(maxlen=TREND_CAP)
 
         # --- Буферы карт (Ld(Id), Lq(Iq), а также Torque/Power vs RPM) ---
         self.map_Id = deque(maxlen=TREND_CAP)      # X для Ld(Id)

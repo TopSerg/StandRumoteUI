@@ -19,6 +19,9 @@
     <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\src\MarathonLogic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\src\SignalLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\gvn\StandRemoteUI\server\Stand_Marathon\src\StateMachine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

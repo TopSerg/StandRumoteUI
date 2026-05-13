@@ -4,5 +4,6 @@ C:\gvn\StandRemoteUI\server\Stand_Marathon\src\CommandSender.cpp;C:\gvn\StandRem
 C:\gvn\StandRemoteUI\server\Stand_Marathon\src\ConfigManager.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\ConfigManager.obj
 C:\gvn\StandRemoteUI\server\Stand_Marathon\src\DbcSignalCache.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\DbcSignalCache.obj
 C:\gvn\StandRemoteUI\server\Stand_Marathon\src\MarathonLogic.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\MarathonLogic.obj
+C:\gvn\StandRemoteUI\server\Stand_Marathon\src\SignalLogger.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\SignalLogger.obj
 C:\gvn\StandRemoteUI\server\Stand_Marathon\src\StateMachine.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\StateMachine.obj
 C:\gvn\StandRemoteUI\server\Stand_Marathon\src\YokogawaDL850E.cpp;C:\gvn\StandRemoteUI\server\out\build\x64-Release\MarathonWS.dir\Release\YokogawaDL850E.obj

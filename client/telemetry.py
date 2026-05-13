@@ -26,9 +26,6 @@ class Telemetry:
         self.ui_log = ui_log
 
         # краткие ссылки на графики (делаем устойчиво к разным реализациям view)
-        self._tr = getattr(views, "trends", getattr(state, "trends", {}))
-        self._mp = getattr(views, "maps", getattr(state, "maps", {}))
-
         self._last_rs = DEFAULT_RS_OHMS
         self._last_pole_pairs = DEFAULT_POLE_PAIRS
 
@@ -37,7 +34,6 @@ class Telemetry:
     def start_timers(self):
         # периодический рефреш графиков (минимальный, чтобы не грузить CPU)
         self.root.after(500, self._tick_trends)
-        self.root.after(800, self._tick_maps)
 
     def on_status(self, msg: str):
         # Вызывается WSClient при изменении статуса
@@ -82,6 +78,10 @@ class Telemetry:
                 self._handle_can_frame(data)
                 return
 
+            if data.get("type") == "signal_catalog":
+                self._handle_signal_catalog(data)
+                return
+
             # fallback: по наличию id+direction
             if "id" in data and "direction" in data:
                 self._handle_can_frame(data)
@@ -113,6 +113,7 @@ class Telemetry:
                 "Rs",
                 "TimeStamp",
                 "ThetaCorr",
+                "dbc_signals",
             }:
                 self._handle_model_data(data)
                 return
@@ -124,6 +125,69 @@ class Telemetry:
             self.ui_log(f"[TELEM] handler error: {ex}")
 
     # ---------- CAN ----------
+
+    def _handle_signal_catalog(self, data: dict):
+        signals = data.get("signals", [])
+        if not isinstance(signals, list):
+            return
+        self.state.signal_catalog = signals
+        self.state.selected_rx_signals = {
+            str(item.get("signal_name"))
+            for item in signals
+            if item.get("direction") == "rx" and item.get("selected")
+        }
+        self.state.selected_tx_signals = {
+            str(item.get("signal_name"))
+            for item in signals
+            if item.get("direction") == "tx" and item.get("selected")
+        }
+        dynamic = getattr(self.state, "dynamic_log_columns", None)
+        if dynamic is None:
+            dynamic = []
+            self.state.dynamic_log_columns = dynamic
+        for item in signals:
+            if not item.get("selected"):
+                continue
+            col = self._dbc_log_column(item)
+            if col and col not in dynamic:
+                dynamic.append(col)
+        self._sync_log_tree_columns()
+        refresh = getattr(self.views, "refresh_signal_trees", None)
+        if callable(refresh):
+            refresh()
+        self.ui_log(
+            f"[SIGNALS] catalog updated: RX={len(self.state.selected_rx_signals)} "
+            f"TX={len(self.state.selected_tx_signals)}"
+        )
+
+    def _log_dbc_signals(self, d: dict):
+        signals = d.get("dbc_signals")
+        if not isinstance(signals, list):
+            return
+        self.state.latest_dbc_signals = signals
+
+    @staticmethod
+    def _dbc_log_column(sample: dict) -> str:
+        direction = str(sample.get("direction", "")).upper()
+        name = str(sample.get("signal_name", "")).strip()
+        if not name:
+            return ""
+        return f"{direction}.{name}" if direction else name
+
+    def _sync_log_tree_columns(self):
+        tree = getattr(self.views, "telem_tree", getattr(self.state, "telem_tree", None))
+        if tree is None:
+            return
+        fixed = set(TELEM_COLUMNS)
+        columns = list(TELEM_COLUMNS) + list(getattr(self.state, "dynamic_log_columns", []))
+        try:
+            tree.configure(columns=columns)
+            for col in columns:
+                tree.heading(col, text=col)
+                width = 100 if col in fixed else max(120, min(220, len(col) * 8))
+                tree.column(col, width=width, anchor="center")
+        except Exception:
+            pass
 
     def _handle_can_frame(self, data: dict):
         """
@@ -190,6 +254,8 @@ class Telemetry:
         - логбук (таблица + буфер)
         - буферы для трендов/карт
         """
+        self._log_dbc_signals(d)
+
         # --- считать основные величины (с алиасами) ---
         Ud = self._as_float(self._get_alias(d, "Ud"))
         Uq = self._as_float(self._get_alias(d, "Uq"))
@@ -200,7 +266,10 @@ class Telemetry:
         Ms = self._as_float(d.get("Ms"))
         ns = self._as_float(d.get("ns"))
 
-        igbt = self._as_float(d.get("MCU_IGBTTempU"))
+        igbt_u = self._as_float(d.get("MCU_IGBTTempU"))
+        igbt_v = self._as_float(d.get("MCU_IGBTTempV"))
+        igbt_w = self._as_float(d.get("MCU_IGBTTempW"))
+        igbt_max = self._as_float(d.get("MCU_IGBTTempMax"))
         stator = self._as_float(d.get("MCU_TempCurrStr"))
 
         Flux = self._as_float(self._get_alias(d, "Flux"))
@@ -262,44 +331,45 @@ class Telemetry:
             put("Flux", Flux)
             put("Theta", Theta)
             put("Temperature", Temperature)
-            put("IGBT temperature", igbt)
+            put("IGBT temperature U", igbt_u)
+            put("IGBT temperature V", igbt_v)
+            put("IGBT temperature W", igbt_w)
+            put("IGBT temperature Max", igbt_max)
             put("Stator temperature", stator)
 
         # --- логбук (в таблицу) ---
-        self._append_log_row(
-            {
-                "ts": datetime.now().strftime("%H:%M:%S.%f")[:-3],
-                "ns": ns,
-                "Ms": Ms,
-                "Idc": Idc,
-                "Isd": Isd,
-                "Ud": Ud,
-                "Uq": Uq,
-                "Id": Id,
-                "Iq": Iq,
-                "Flux": Flux,
-                "Theta": Theta,
-                "Temperature": Temperature,
-                "Emf": Emf,
-                "Welectrical": We,
-                "motorRs": Rs,
-                "Wmechanical": Wm,
-                "Rs": Rs,
-                "TimeStamp": TimeStamp,
-                "ThetaCorr": ThetaCorr,
-            }
-        )
+        row = {
+            "ts": datetime.now().strftime("%H:%M:%S.%f")[:-3],
+            "ns": ns,
+            "Ms": Ms,
+            "Idc": Idc,
+            "Isd": Isd,
+            "Ud": Ud,
+            "Uq": Uq,
+            "Id": Id,
+            "Iq": Iq,
+            "Flux": Flux,
+            "Theta": Theta,
+            "Temperature": Temperature,
+            "Emf": Emf,
+            "Welectrical": We,
+            "motorRs": Rs,
+            "Wmechanical": Wm,
+            "Rs": Rs,
+            "TimeStamp": TimeStamp,
+            "ThetaCorr": ThetaCorr,
+        }
+        for sample in getattr(self.state, "latest_dbc_signals", []) or []:
+            if not isinstance(sample, dict):
+                continue
+            col = self._dbc_log_column(sample)
+            if col:
+                row[col] = self._as_float(sample.get("physical"), sample.get("physical"))
+        self._append_log_row(row)
 
         # --- буферы для трендов ---
-        self._push(self.state.trend_ns, ns)
-        self._push(self.state.trend_Ms, Ms)
-        self._push(self.state.trend_Idc, Idc)
-        self._push(self.state.trend_Isd, Isd)
-        self._push(self.state.trend_Ud, Ud)
-        self._push(self.state.trend_Uq, Uq)
-        self._push(self.state.trend_Id, Id)
-        self._push(self.state.trend_Iq, Iq)
-        self._push(self.state.trend_ts, datetime.now())
+        self._push(self.state.trend_theta_ts, TimeStamp)
+        self._push(self.state.trend_theta, Theta)
 
         # --- прямые Ld/Lq из телеметрии, если приходят ---
         Ld_direct = self._as_float(d.get("Ld"))
@@ -390,6 +460,15 @@ class Telemetry:
         if not getattr(self.state, "log_enabled", None) or not self.state.log_enabled.get():
             return
 
+        fixed = set(TELEM_COLUMNS)
+        dynamic = getattr(self.state, "dynamic_log_columns", None)
+        if dynamic is None:
+            dynamic = []
+            self.state.dynamic_log_columns = dynamic
+        for col in row:
+            if col not in fixed and "." in col and col not in dynamic:
+                dynamic.append(col)
+
         # буфер
         self.state.log_rows.append(row)
         if len(self.state.log_rows) > self.state.max_rows:
@@ -400,15 +479,21 @@ class Telemetry:
         if tree is None:
             return
 
+        columns = list(TELEM_COLUMNS) + list(dynamic)
+        try:
+            if tuple(tree["columns"]) != tuple(columns):
+                tree.configure(columns=columns)
+                for col in columns:
+                    tree.heading(col, text=col)
+                    width = 100 if col in fixed else max(120, min(220, len(col) * 8))
+                    tree.column(col, width=width, anchor="center")
+        except Exception:
+            pass
+
         values = []
-        for col in TELEM_COLUMNS:
+        for col in columns:
             v = row.get(col, "")
-            if isinstance(v, float):
-                if math.isfinite(v):
-                    v = f"{v:.3f}"
-                else:
-                    v = ""
-            values.append(v)
+            values.append(self._format_log_value(v))
 
         try:
             tree.insert("", "end", values=values)
@@ -418,6 +503,14 @@ class Telemetry:
                 tree.delete(tree.get_children()[0])
         except Exception:
             pass
+
+    @staticmethod
+    def _format_log_value(v):
+        if isinstance(v, float):
+            if math.isfinite(v):
+                return f"{v:.3f}"
+            return ""
+        return v
 
     @staticmethod
     def _push(deq, val):
@@ -436,16 +529,35 @@ class Telemetry:
 
     def _tick_trends(self):
         try:
-            tr = self._tr
+            tr = getattr(self.state, "trends", {}) or {}
             if not tr:
                 return
             axes = tr.get("axes")
             lines = tr.get("lines")
             fig = tr.get("fig") or tr.get("figure")
 
+            if axes and lines and self.state.trend_theta and self.state.trend_theta_ts:
+                n = min(len(self.state.trend_theta), len(self.state.trend_theta_ts))
+                lines[0].set_data(
+                    list(self.state.trend_theta_ts)[-n:],
+                    list(self.state.trend_theta)[-n:],
+                )
+                for ax in axes:
+                    try:
+                        ax.relim()
+                        ax.autoscale_view()
+                    except Exception:
+                        pass
+                if fig:
+                    try:
+                        fig.canvas.draw_idle()
+                    except Exception:
+                        pass
+                return
+
             # ожидаем порядок линий: (l_ns,l_ms,l_idc,l_isd,l_id,l_iq,l_ud,l_uq)
             # и 4 оси: ax1..ax4
-            if axes and lines and len(lines) >= 8:
+            if axes and lines and len(lines) >= 9:
                 # считаем ось X как в gui_ws: время относительно последней точки
                 ts = self.state.trend_ts
                 if ts:
@@ -490,6 +602,13 @@ class Telemetry:
                         xs = xs_all[-n:]
                         lines[7].set_data(xs, list(self.state.trend_Uq))
 
+                    if self.state.trend_theta and self.state.trend_theta_ts:
+                        n = min(len(self.state.trend_theta), len(self.state.trend_theta_ts))
+                        lines[8].set_data(
+                            list(self.state.trend_theta_ts)[-n:],
+                            list(self.state.trend_theta)[-n:],
+                        )
+
                     # autoscale
                     for ax in axes:
                         try:
@@ -509,7 +628,7 @@ class Telemetry:
 
     def _tick_maps(self):
         try:
-            mp = self._mp
+            mp = getattr(self.state, "maps", {}) or {}
             if not mp:
                 return
             fig = mp.get("fig") or mp.get("figure")
