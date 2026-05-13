@@ -14,7 +14,7 @@ TELEM_COLUMNS = [
     "ns", "Ms",
     "Udc", "Idc", "Isd", "Isq",
     "Ud", "Uq", "Id", "Iq",
-    "Flux", "Theta", "Temperature",
+    "Flux", "Theta", "Temperature", "StatorTemperature",
     "Rs", "TimeStamp", "ThetaCorr",
     "MCU_IGBTTempU", "MCU_IGBTTempV", "MCU_IGBTTempW", "MCU_IGBTTempMax",
     "MCU_TempCurrStr", "MCU_TempCurrCool",

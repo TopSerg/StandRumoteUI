@@ -360,7 +360,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     params_frame = ttk.LabelFrame(main_inner, text="MCU_VCU_parameters")
     params_frame.grid(row=2, column=1, columnspan=2, padx=(0,10), pady=0, sticky="nsew")
     state.entry_vars = getattr(state, "entry_vars", {}) or {}
-    for i, param in enumerate([
+    monitor_params = [
         "Speed rotation",
         "Torque (Ms)",
         "DC voltage (Udc)",
@@ -377,30 +377,26 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         "M min",
         "M grad max",
         "n max",
-    ]):
-        ttk.Label(params_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=5)
+    ]
+    split_at = (len(monitor_params) + 1) // 2
+    for i, param in enumerate(monitor_params):
+        block = 0 if i < split_at else 1
+        row = i if block == 0 else i - split_at
+        label_col = block * 2
+        value_col = label_col + 1
+        ttk.Label(params_frame, text=param + ":").grid(row=row, column=label_col, sticky="e", padx=5, pady=4)
         var = state.entry_vars.get(param) or tk.StringVar(master=root)
         state.entry_vars[param] = var
-        ttk.Entry(params_frame, textvariable=var, width=20).grid(row=i, column=1, padx=5, pady=5)
+        ttk.Entry(params_frame, textvariable=var, width=16).grid(row=row, column=value_col, padx=5, pady=4, sticky="ew")
+    params_frame.grid_columnconfigure(1, weight=1)
+    params_frame.grid_columnconfigure(3, weight=1)
 
     # CAN Tx/Rx (12 полей: id, data0..7, len, flags, ts)
     can_frame = ttk.LabelFrame(main_inner, text="Tx / Rx CAN")
-    can_frame.grid(row=3, column=1, columnspan=2, padx=(0,10), pady=10, sticky="nsew")
-    headers = ["id"] + [f"data{i}" for i in range(8)] + ["len", "flags", "ts"]
-    for col, header in enumerate(headers):
-        ttk.Label(can_frame, text=header, anchor="center", width=8).grid(row=0, column=col+1, padx=2, pady=(0,5))
-    ttk.Label(can_frame, text="Tx:").grid(row=1, column=0, sticky="e", padx=3)
-    ttk.Label(can_frame, text="Rx:").grid(row=2, column=0, sticky="e", padx=3)
-    for col in range(12):
-        Entry(can_frame, textvariable=state.can_tx_data[col], width=8, justify="center", state="readonly")\
-            .grid(row=1, column=col+1, padx=2, pady=2)
-    for col in range(12):
-        Entry(can_frame, textvariable=state.can_rx_data[col], width=8, justify="center", state="readonly")\
-            .grid(row=2, column=col+1, padx=2, pady=2)
 
     # MCU Current & Voltage
     voltage_frame = ttk.LabelFrame(main_inner, text="MCU Current & Voltage")
-    voltage_frame.grid(row=4, column=1, padx=(0,10), pady=10, sticky="nsew")
+    voltage_frame.grid(row=3, column=1, padx=(0,10), pady=10, sticky="nsew")
     for i, param in enumerate(["Ud", "Uq", "Id", "Iq"]):
         ttk.Label(voltage_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
         var = state.entry_vars.get(param) or tk.StringVar(master=root)
@@ -409,7 +405,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
 
     # MCU Flux Parameters
     flux_frame = ttk.LabelFrame(main_inner, text="MCU Flux Parameters")
-    flux_frame.grid(row=4, column=2, padx=(0,10), pady=10, sticky="nsew")
+    flux_frame.grid(row=3, column=2, padx=(0,10), pady=10, sticky="nsew")
     for i, param in enumerate(["Flux", "Theta", "Temperature"]):
         ttk.Label(flux_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
         var = state.entry_vars.get(param) or tk.StringVar(master=root)

@@ -372,6 +372,7 @@ class Telemetry:
             "Flux": Flux,
             "Theta": Theta,
             "Temperature": Temperature,
+            "StatorTemperature": stator,
             "Emf": Emf,
             "Welectrical": We,
             "motorRs": Rs,
