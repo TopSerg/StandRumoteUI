@@ -141,16 +141,14 @@ class Telemetry:
             for item in signals
             if item.get("direction") == "tx" and item.get("selected")
         }
-        dynamic = getattr(self.state, "dynamic_log_columns", None)
-        if dynamic is None:
-            dynamic = []
-            self.state.dynamic_log_columns = dynamic
+        dynamic = []
         for item in signals:
             if not item.get("selected"):
                 continue
             col = self._dbc_log_column(item)
             if col and col not in dynamic:
                 dynamic.append(col)
+        self.state.dynamic_log_columns = dynamic
         self._sync_log_tree_columns()
         refresh = getattr(self.views, "refresh_signal_trees", None)
         if callable(refresh):

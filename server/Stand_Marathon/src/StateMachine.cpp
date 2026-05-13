@@ -112,7 +112,6 @@ void StateMachine::handleInit() {
 
 CANMessage StateMachine::handleRead2() {
     CANMessage msg;
-    std::cout << canInterface.receive(msg) << std::endl;
     while (canInterface.receive(msg)) {
         MarathonLogic::updateFromCAN(msg, data);
     }

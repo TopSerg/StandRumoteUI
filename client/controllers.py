@@ -232,10 +232,10 @@ class Controllers:
         enable = any(name not in bucket for name in message_signals)
         if enable:
             bucket.update(message_signals)
-            self._ensure_log_columns(direction, message_signals)
         else:
             for name in message_signals:
                 bucket.discard(name)
+        self._rebuild_log_columns_from_selection()
         refresh = getattr(self.views, "refresh_signal_trees", None)
         if callable(refresh):
             refresh()
@@ -247,19 +247,24 @@ class Controllers:
         signal_name = str(signal_name or "").strip()
         return f"{direction}.{signal_name}" if direction and signal_name else signal_name
 
-    def _ensure_log_columns(self, direction: str, signal_names: list[str]) -> None:
-        dynamic = getattr(self.state, "dynamic_log_columns", None)
-        if dynamic is None:
-            dynamic = []
-            self.state.dynamic_log_columns = dynamic
-        changed = False
-        for name in signal_names:
-            col = self._dbc_log_column(direction, name)
+    def _rebuild_log_columns_from_selection(self) -> None:
+        dynamic = []
+        catalog = getattr(self.state, "signal_catalog", []) or []
+        for item in catalog:
+            direction = item.get("direction")
+            signal_name = str(item.get("signal_name", ""))
+            selected = (
+                signal_name in self.state.selected_tx_signals
+                if direction == "tx"
+                else signal_name in self.state.selected_rx_signals
+            )
+            if not selected:
+                continue
+            col = self._dbc_log_column(direction, signal_name)
             if col and col not in dynamic:
                 dynamic.append(col)
-                changed = True
-        if changed:
-            self._sync_log_tree_columns()
+        self.state.dynamic_log_columns = dynamic
+        self._sync_log_tree_columns()
 
     def _sync_log_tree_columns(self) -> None:
         if not self.views:
