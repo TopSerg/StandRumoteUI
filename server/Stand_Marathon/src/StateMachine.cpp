@@ -101,13 +101,13 @@ void StateMachine::handleInit() {
     std::cout << "CAN Initialized\n";
     setState(State::Read2);
     // инициализируем канал параметрами из DataModel (после загрузки INI)
-    /*if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) { // корректнее, чем хардкод:contentReference[oaicite:1]{index=1}
+    if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) { // корректнее, чем хардкод:contentReference[oaicite:1]{index=1}
         std::cout << "CAN Initialized\n";
         setState(State::Read2);
     } else {
         std::cerr << "CAN Init failed!\n";
         setState(State::Stop);
-    }*/
+    }
 }
 
 CANMessage StateMachine::handleRead2() {
