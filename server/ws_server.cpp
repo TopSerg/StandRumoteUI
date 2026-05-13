@@ -360,9 +360,14 @@ void do_session(tcp::socket socket) {
 
         running = false;
         if (updater.joinable()) updater.join();
+        sm.setState(State::Stop);
+        can.stop();
+        std::cout << "[WS] Client disconnected, CAN commands stopped" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[Session error] " << e.what() << std::endl;
+        sm.setState(State::Stop);
+        can.stop();
     }
 }
 
