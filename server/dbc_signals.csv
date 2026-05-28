@@ -6994,3 +6994,7 @@ timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
 2026-05-13 13:08:27.490;TX;768;VCU_to_MCU_CurrentCommand;Checksum_300;0;0;1
 timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
 timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
+timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
+timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
+timestamp;direction;message_id;message_name;signal_name;raw;physical;selected
+timestamp;direction;message_id;message_name;signal_name;raw;physical;selected

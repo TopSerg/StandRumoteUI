@@ -9,7 +9,7 @@ struct DbcRuntimeSignalValue {
     std::string messageName;
     std::string signalName;
     uint32_t raw = 0;
-    double physical = 0.0;
+    double physical = 0.0f;
 };
 
 struct DataModel {

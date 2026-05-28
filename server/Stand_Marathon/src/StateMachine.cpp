@@ -3,6 +3,22 @@
 #include "CommandSender.h"
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
+
+namespace {
+
+bool isDebugFluxParamsEnabled() {
+    return std::getenv("WS_DEBUG_ZV_FLUX_RAW") || std::getenv("WS_DEBUG_ZV_RS_RAW");
+}
+
+CANMessage makeDebugFluxParamsMessage() {
+    CANMessage msg{};
+    msg.id = 0x80;
+    msg.length = 8;
+    return msg;
+}
+
+}
 
 StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& cfg)
     : data(model), canInterface(can), config(cfg) {}
@@ -115,6 +131,12 @@ CANMessage StateMachine::handleRead2() {
     while (canInterface.receive(msg)) {
         MarathonLogic::updateFromCAN(msg, data);
     }
+
+    if (isDebugFluxParamsEnabled()) {
+        msg = makeDebugFluxParamsMessage();
+        MarathonLogic::updateFromCAN(msg, data);
+    }
+
     return msg;
 }
 
