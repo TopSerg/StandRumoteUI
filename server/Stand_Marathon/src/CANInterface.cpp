@@ -26,7 +26,7 @@ static inline std::string to_hex(const uint8_t* data, int len) {
     return s;
 }
 
-CANInterface::CANInterface() : handle(PCAN_NONEBUS) {}
+CANInterface::CANInterface() : handle(PCAN_NONEBUS), initialized(false) {}
 
 CANInterface::~CANInterface() {
     stop();
@@ -107,6 +107,13 @@ void CANInterface::stop() {
 }*/
 
 bool CANInterface::send(uint32_t id, const uint8_t* data, uint8_t length) {
+    if (!transmitEnabled.load()) {
+        if (WS_CAN_LOG()) {
+            std::printf("[CAN TX BLOCKED][RX ONLY] ID=0x%03X DLC=%d\n",
+                        (unsigned)id, (int)length);
+        }
+        return false;
+    }
     if (!initialized) return false;
 
     TPCANMsg msg{};
@@ -126,6 +133,15 @@ bool CANInterface::send(uint32_t id, const uint8_t* data, uint8_t length) {
         return false;
     }
     return true;
+}
+
+void CANInterface::setTransmitEnabled(bool enabled) {
+    transmitEnabled.store(enabled);
+    std::cout << "[CAN] application TX " << (enabled ? "enabled" : "blocked (RX only)") << std::endl;
+}
+
+bool CANInterface::isTransmitEnabled() const {
+    return transmitEnabled.load();
 }
 
 bool CANInterface::receive(CANMessage& msg) {

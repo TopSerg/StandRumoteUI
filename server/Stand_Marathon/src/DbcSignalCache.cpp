@@ -490,6 +490,10 @@ void DbcSignalCache::buildDefaultSelection()
     selectRx("ZVTemperature", [](DataModel& d, double v) { d.ZVTemperature = static_cast<float>(v); });
     selectRx("ZVFlux", [](DataModel& d, double v) { d.ZVFlux = static_cast<float>(v); });
     selectRx("ZVRs", [](DataModel& d, double v) { d.ZVRs = static_cast<float>(v); });
+    selectRx("ResolverSine", [](DataModel& d, double v) { d.ResolverSine = static_cast<float>(v); });
+    selectRx("ResolverCosine", [](DataModel& d, double v) { d.ResolverCosine = static_cast<float>(v); });
+    selectRx("ResolverTheta", [](DataModel& d, double v) { d.ResolverTheta = static_cast<float>(v); });
+    selectRx("ResolverThetaCorr", [](DataModel& d, double v) { d.ResolverThetaCorr = static_cast<float>(v); });
     selectRx("MCU_TrqAbsMax", [](DataModel& d, double v) { d.M_max = static_cast<float>(v); });
     selectRx("MCU_TrqAbsMin", [](DataModel& d, double v) { d.M_min = static_cast<float>(v); });
 

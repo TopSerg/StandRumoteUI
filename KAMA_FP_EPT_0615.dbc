@@ -493,6 +493,12 @@ BO_ 128 MCU_FluxParams: 8 MCU
  SG_ ZVFlux : 14|16@0+ (0.0001,0) [0|7] "Degree" VCU
  SG_ ZVRs : 30|16@0+ (0.0001,0) [0|7] "Om" VCU
 
+BO_ 129 MCU_ResolverCalibration: 8 MCU
+ SG_ ResolverSine : 7|16@0+ (1,-32768) [-32768|32767] "ADC" VCU
+ SG_ ResolverCosine : 23|16@0+ (1,-32768) [-32768|32767] "ADC" VCU
+ SG_ ResolverTheta : 39|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
+ SG_ ResolverThetaCorr : 55|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
+
 BO_ 709 MCU_DeratingStatus: 8 MCU
  SG_ MCU_bDernOvrIdc : 6|1@0+ (1,0) [0|1] ""  VCU
  SG_ MCU_bDernOvrUdc : 5|1@0+ (1,0) [0|1] ""  VCU

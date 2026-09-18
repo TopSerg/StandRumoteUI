@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <atomic>
 #include <windows.h>
 #include "PCANBasic.h"
 #include "canDBCtask.h"
@@ -26,6 +27,8 @@ public:
     //uint8_t send(dbc_can_tx_message_type* message);
     bool send(uint32_t id, const uint8_t* data, uint8_t length);
     bool receive(CANMessage& msg);
+    void setTransmitEnabled(bool enabled);
+    bool isTransmitEnabled() const;
 
     enum BUSNUMBER{
         BUS1 = 1,
@@ -37,6 +40,7 @@ public:
 private:
     TPCANHandle handle;
     bool initialized;
+    std::atomic<bool> transmitEnabled{false};
 
     std::string getErrorText(TPCANStatus error);
 };

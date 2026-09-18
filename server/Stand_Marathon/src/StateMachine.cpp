@@ -9,7 +9,33 @@ StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& c
     : data(model), canInterface(can), config(cfg) {}
 
 void StateMachine::setState(State newState) {
-    currentState = newState;
+    if (newState == State::ResolverRxInit || newState == State::ResolverRx) {
+        canInterface.setTransmitEnabled(false);
+    } else if (newState == State::Read2) {
+        canInterface.setTransmitEnabled(true);
+    } else {
+        canInterface.setTransmitEnabled(false);
+    }
+    currentState.store(newState);
+}
+
+bool StateMachine::isRxOnly() const {
+    const State state = currentState.load();
+    return state == State::ResolverRxInit || state == State::ResolverRx;
+}
+
+const char* StateMachine::stateName() const {
+    switch (currentState.load()) {
+        case State::Idle: return "idle";
+        case State::Init: return "init";
+        case State::Read2: return "normal";
+        case State::ResolverRxInit: return "resolver_rx_init";
+        case State::ResolverRx: return "resolver_rx";
+        case State::Stop: return "stop";
+        case State::Save_Cfg: return "save_cfg";
+        case State::Read_Cfg: return "read_cfg";
+    }
+    return "unknown";
 }
 
 // ТОЛЬКО тут решаем, когда слать сообщения
@@ -30,8 +56,8 @@ void StateMachine::periodicTx() {
     // data.MCU_RequestedState = 1;
     // data.GearCtrl = 4;
 
-    // Не слать ничего в Stop/Idle
-    if (currentState == State::Stop || currentState == State::Idle) return;
+    // Передача разрешена только в обычном режиме управления.
+    if (currentState.load() != State::Read2) return;
 
     // 0x046 (control) — каждые 20 мс
     if (now - t_ctrl_ >= PERIOD_CTRL) {
@@ -55,7 +81,7 @@ void StateMachine::periodicTx() {
 
 void StateMachine::update() {
     // СНАЧАЛА — периодические отправки
-    if (currentState != State::Idle){
+    if (currentState.load() == State::Read2){
         periodicTx();
     }
 
@@ -64,10 +90,12 @@ void StateMachine::update() {
     }
 
     // ДАЛЕЕ — обработка текущего состояния
-    switch (currentState) {
+    switch (currentState.load()) {
         case State::Idle:     handleIdle(); break;
         case State::Init:     handleInit(); break;
         case State::Read2:    handleRead2(); break;
+        case State::ResolverRxInit: handleResolverRxInit(); break;
+        case State::ResolverRx: handleResolverRx(); break;
         case State::Stop:     handleStop(); break;
         case State::Save_Cfg: handleSaveCfg(); break;
         case State::Read_Cfg: handleReadCfg(); break;
@@ -90,6 +118,22 @@ void StateMachine::update() {
     
 }
 
+void StateMachine::handleResolverRxInit() {
+    std::cout << "[STATE] Resolver RX init (application TX is blocked)\n";
+    canInterface.stop();
+    canInterface.setTransmitEnabled(false);
+    if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) {
+        setState(State::ResolverRx);
+    } else {
+        std::cerr << "CAN RX-only init failed!\n";
+        setState(State::Stop);
+    }
+}
+
+CANMessage StateMachine::handleResolverRx() {
+    return handleRead2();
+}
+
 
 
 void StateMachine::handleIdle() {
@@ -99,8 +143,7 @@ void StateMachine::handleIdle() {
 
 void StateMachine::handleInit() {
     std::cout << "[STATE] Init\n";
-    std::cout << "CAN Initialized\n";
-    setState(State::Read2);
+    canInterface.stop();
     // инициализируем канал параметрами из DataModel (после загрузки INI)
     if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) { // корректнее, чем хардкод:contentReference[oaicite:1]{index=1}
         std::cout << "CAN Initialized\n";

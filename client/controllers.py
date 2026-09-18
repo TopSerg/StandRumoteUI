@@ -131,6 +131,8 @@ class Controllers:
 
             "connect_ws": self.connect_ws_from_ui,
             "apply_json_period": self.apply_json_period,
+            "start_resolver_calibration": self.start_resolver_calibration,
+            "reset_resolver_capture": self.reset_resolver_capture,
 
             # синонимы на всякий случай
             "send_limits_now": self.send_limits_now,
@@ -176,6 +178,33 @@ class Controllers:
             "period_ms": period_ms,
         })
         self.ui_log(f"[UI] JSON period set to {period_ms} ms", "UI")
+
+    def start_resolver_calibration(self) -> None:
+        """Start CAN receive mode with all application data-frame TX blocked."""
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        self.reset_resolver_capture()
+        self.state.json_period_ms_var.set("20")
+        self.client.send_json_threadsafe({"cmd": "SetJsonPeriod", "period_ms": 20})
+        self.client.send_json_threadsafe({"cmd": "StartResolverCalibration"})
+        self.state.resolver_mode_var.set("STARTING — RX ONLY")
+        self.ui_log("[SAFE] Resolver calibration: RX only, application CAN TX blocked, JSON 50 Hz")
+
+    def reset_resolver_capture(self) -> None:
+        for name in (
+            "resolver_sine_min", "resolver_sine_max",
+            "resolver_cosine_min", "resolver_cosine_max",
+        ):
+            setattr(self.state, name, None)
+        self.state.resolver_capture_count_var.set("0")
+        for name in (
+            "resolver_sine_offset_var", "resolver_cosine_offset_var",
+            "resolver_sine_amplitude_var", "resolver_cosine_amplitude_var",
+            "resolver_gain_ratio_var",
+        ):
+            getattr(self.state, name).set("—")
+        self.ui_log("[Resolver] capture statistics reset; rotate the shaft through a full revolution")
 
     def _apply_json_period_when_connected(self, attempts_left: int = 10) -> None:
         if not self.client:

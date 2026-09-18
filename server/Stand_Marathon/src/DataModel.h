@@ -94,6 +94,13 @@ struct DataModel {
     float ZVTimeStamp = 0.0f;
     float ZVThetaCorr = 0.0f;
 
+    // === Resolver calibration telemetry (CAN 0x081, 50 Hz) ===
+    float ResolverSine = 0.0f;
+    float ResolverCosine = 0.0f;
+    float ResolverAmplitude = 0.0f;
+    float ResolverTheta = 0.0f;
+    float ResolverThetaCorr = 0.0f;
+
     float Ud = 0;
     float Uq = 0;
     float Id = 0;

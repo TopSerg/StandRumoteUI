@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iomanip>
 #include <cstdlib>
+#include <cmath>
 
 namespace {
 
@@ -171,6 +172,22 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
                       << " ZVFlux=" << data.ZVFlux
                       << " ZVRs=" << data.ZVRs
                       << std::endl;
+            break;
+        }
+
+        case 0x81: { // MCU_ResolverCalibration (BO_ 129)
+            const uint16_t rawSine = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
+            const uint16_t rawCosine = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16));
+            const uint16_t rawTheta = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16));
+            const uint16_t rawThetaCorr = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 55, 16));
+
+            data.ResolverSine = static_cast<float>(rawSine) - 32768.0f;
+            data.ResolverCosine = static_cast<float>(rawCosine) - 32768.0f;
+            data.ResolverTheta = static_cast<float>(rawTheta) * 0.0001f;
+            data.ResolverThetaCorr = static_cast<float>(rawThetaCorr) * 0.0001f;
+            data.ResolverAmplitude = std::sqrt(
+                data.ResolverSine * data.ResolverSine +
+                data.ResolverCosine * data.ResolverCosine);
             break;
         }
 

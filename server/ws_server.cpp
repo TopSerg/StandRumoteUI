@@ -176,6 +176,13 @@ std::string serializeData() {
     j["ZVRs"] = model.ZVRs;
     j["ZVTimeStamp"] = model.ZVTimeStamp;
     j["ZVThetaCorr"] = model.ZVThetaCorr;
+    j["ResolverSine"] = model.ResolverSine;
+    j["ResolverCosine"] = model.ResolverCosine;
+    j["ResolverAmplitude"] = model.ResolverAmplitude;
+    j["ResolverTheta"] = model.ResolverTheta;
+    j["ResolverThetaCorr"] = model.ResolverThetaCorr;
+    j["can_mode"] = sm.stateName();
+    j["can_rx_only"] = sm.isRxOnly();
     j["json_period_ms"] = g_json_period_ms.load();
     j["dbc_signals"] = json::array();
     DbcSignalCache& dbcCache = DbcSignalCache::instance();
@@ -259,13 +266,10 @@ static json signal_catalog_json()
 
 void handleCommand(const json& j, std::vector<json>& responses) {
     std::string cmd = j.value("cmd", "");
-
-
-    apply_torque_fields(j);
-    apply_limit_fields(j);
-    apply_control_fields(j);
     if (cmd == "Init") {
         sm.setState(State::Init);
+    } else if (cmd == "StartResolverCalibration" || cmd == "ResolverRx") {
+        sm.setState(State::ResolverRxInit);
     } else if (cmd == "Stop") {
         sm.setState(State::Stop);
     } else if (cmd == "Read2") {
@@ -273,13 +277,36 @@ void handleCommand(const json& j, std::vector<json>& responses) {
     } else if (cmd == "SaveCfg") {
         sm.setState(State::Save_Cfg);
     } else if (cmd == "SendControl") {
+        if (!can.isTransmitEnabled()) {
+            responses.push_back({
+                {"type", "command_rejected"},
+                {"cmd", cmd},
+                {"reason", "CAN application TX is not enabled in the current mode"}
+            });
+            return;
+        }
         apply_control_fields(j);
         CommandSender::sendControlCommand(can, model);
     } else if (cmd == "SendLimits") {
+        if (!can.isTransmitEnabled()) {
+            responses.push_back({
+                {"type", "command_rejected"},
+                {"cmd", cmd},
+                {"reason", "CAN application TX is not enabled in the current mode"}
+            });
+            return;
+        }
         apply_limit_fields(j);
         CommandSender::sendLimitCommand(can, model);
     } else if (cmd == "SendTorque") {
-        std::cout << "ABOBA" << std::endl;
+        if (!can.isTransmitEnabled()) {
+            responses.push_back({
+                {"type", "command_rejected"},
+                {"cmd", cmd},
+                {"reason", "CAN application TX is not enabled in the current mode"}
+            });
+            return;
+        }
         apply_torque_fields(j);
         CommandSender::sendTorqueCommand(can, model);
     } else if (cmd == "SetJsonPeriod") {

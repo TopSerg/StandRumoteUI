@@ -21,6 +21,8 @@ TELEM_COLUMNS = [
     "M_max", "M_min",
     "MCU_OfsAl", "MCU_Isd", "MCU_Isq", "MCU_bDmpCActv",
     "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode",
+    "ResolverSine", "ResolverCosine", "ResolverAmplitude",
+    "ResolverTheta", "ResolverThetaCorr", "CanMode",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
@@ -39,6 +41,11 @@ FIELD_ALIASES = {
     "Rs": ["Rs", "ZVRs"],
     "TimeStamp": ["TimeStamp", "ZVTimeStamp"],
     "ThetaCorr": ["ThetaCorr", "ZVThetaCorr"],
+    "ResolverSine": ["ResolverSine"],
+    "ResolverCosine": ["ResolverCosine"],
+    "ResolverAmplitude": ["ResolverAmplitude"],
+    "ResolverTheta": ["ResolverTheta"],
+    "ResolverThetaCorr": ["ResolverThetaCorr"],
 }
 
 # Маппинг коробки передач (по DBC VcuActualGear)
@@ -106,6 +113,22 @@ class AppState:
         self.auto_status_var = tk.StringVar(master=root, value="idle")
         self.auto_points_var = tk.StringVar(master=root, value="0")   # сколько точек загружено
         self.json_period_ms_var = tk.StringVar(master=root, value="500")
+        self.resolver_mode_var = tk.StringVar(master=root, value="STOPPED")
+        self.resolver_sine_var = tk.StringVar(master=root, value="—")
+        self.resolver_cosine_var = tk.StringVar(master=root, value="—")
+        self.resolver_amplitude_var = tk.StringVar(master=root, value="—")
+        self.resolver_theta_var = tk.StringVar(master=root, value="—")
+        self.resolver_theta_corr_var = tk.StringVar(master=root, value="—")
+        self.resolver_capture_count_var = tk.StringVar(master=root, value="0")
+        self.resolver_sine_offset_var = tk.StringVar(master=root, value="—")
+        self.resolver_cosine_offset_var = tk.StringVar(master=root, value="—")
+        self.resolver_sine_amplitude_var = tk.StringVar(master=root, value="—")
+        self.resolver_cosine_amplitude_var = tk.StringVar(master=root, value="—")
+        self.resolver_gain_ratio_var = tk.StringVar(master=root, value="—")
+        self.resolver_sine_min = None
+        self.resolver_sine_max = None
+        self.resolver_cosine_min = None
+        self.resolver_cosine_max = None
 
         # --- Буферы трендов (все как в gui_ws.py) ---
         self.trend_ts = deque(maxlen=TREND_CAP)    # datetime для оси X

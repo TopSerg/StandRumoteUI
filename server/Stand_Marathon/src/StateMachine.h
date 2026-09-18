@@ -2,12 +2,13 @@
 #pragma once
 #include <cstdint>
 #include <chrono>
+#include <atomic>
 #include "DataModel.h"
 #include "CANInterface.h"
 #include "ConfigManager.h"
 #include "MarathonLogic.h"
 
-enum class State { Idle, Init, Read2, Stop, Save_Cfg, Read_Cfg };
+enum class State { Idle, Init, Read2, ResolverRxInit, ResolverRx, Stop, Save_Cfg, Read_Cfg };
 
 class StateMachine {
 public:
@@ -15,12 +16,14 @@ public:
 
     void setState(State newState);
     void update(); // вызывать часто (каждые 1–5 мс)
+    bool isRxOnly() const;
+    const char* stateName() const;
 
 private:
     DataModel& data;
     CANInterface& canInterface;
     ConfigManager& config;
-    State currentState = State::Idle;
+    std::atomic<State> currentState{State::Idle};
 
     bool isOverSpeed = false;
 
@@ -39,6 +42,8 @@ private:
     void handleIdle();
     void handleInit();
     CANMessage handleRead2();
+    void handleResolverRxInit();
+    CANMessage handleResolverRx();
     void handleStop();
     void handleSaveCfg();
     void handleReadCfg();

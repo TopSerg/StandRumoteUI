@@ -113,6 +113,12 @@ class Telemetry:
                 "Rs",
                 "TimeStamp",
                 "ThetaCorr",
+                "ResolverSine",
+                "ResolverCosine",
+                "ResolverAmplitude",
+                "ResolverTheta",
+                "ResolverThetaCorr",
+                "can_mode",
                 "dbc_signals",
             }:
                 self._handle_model_data(data)
@@ -289,6 +295,61 @@ class Telemetry:
         Temperature = self._as_float(self._get_alias(d, "Temperature"))
         TimeStamp = self._as_float(self._get_alias(d, "TimeStamp"))
         ThetaCorr = self._as_float(self._get_alias(d, "ThetaCorr"))
+        ResolverSine = self._as_float(self._get_alias(d, "ResolverSine"))
+        ResolverCosine = self._as_float(self._get_alias(d, "ResolverCosine"))
+        ResolverAmplitude = self._as_float(self._get_alias(d, "ResolverAmplitude"))
+        ResolverTheta = self._as_float(self._get_alias(d, "ResolverTheta"))
+        ResolverThetaCorr = self._as_float(self._get_alias(d, "ResolverThetaCorr"))
+        can_mode = str(d.get("can_mode", ""))
+
+        def set_resolver_var(name: str, value, digits: int = 3):
+            var = getattr(self.state, name, None)
+            if var is None:
+                return
+            if value is None:
+                var.set("—")
+            else:
+                var.set(f"{value:.{digits}f}")
+
+        set_resolver_var("resolver_sine_var", ResolverSine)
+        set_resolver_var("resolver_cosine_var", ResolverCosine)
+        set_resolver_var("resolver_amplitude_var", ResolverAmplitude)
+        set_resolver_var("resolver_theta_var", ResolverTheta, 4)
+        set_resolver_var("resolver_theta_corr_var", ResolverThetaCorr, 4)
+        if can_mode:
+            self.state.resolver_mode_var.set(
+                "ACTIVE — RX ONLY — TX BLOCKED" if d.get("can_rx_only") else can_mode.upper()
+            )
+        if d.get("can_rx_only") and ResolverSine is not None and ResolverCosine is not None:
+            self.state.resolver_sine_min = (
+                ResolverSine if self.state.resolver_sine_min is None
+                else min(self.state.resolver_sine_min, ResolverSine)
+            )
+            self.state.resolver_sine_max = (
+                ResolverSine if self.state.resolver_sine_max is None
+                else max(self.state.resolver_sine_max, ResolverSine)
+            )
+            self.state.resolver_cosine_min = (
+                ResolverCosine if self.state.resolver_cosine_min is None
+                else min(self.state.resolver_cosine_min, ResolverCosine)
+            )
+            self.state.resolver_cosine_max = (
+                ResolverCosine if self.state.resolver_cosine_max is None
+                else max(self.state.resolver_cosine_max, ResolverCosine)
+            )
+            count = int(self.state.resolver_capture_count_var.get() or 0) + 1
+            self.state.resolver_capture_count_var.set(str(count))
+            sine_offset = (self.state.resolver_sine_max + self.state.resolver_sine_min) / 2.0
+            cosine_offset = (self.state.resolver_cosine_max + self.state.resolver_cosine_min) / 2.0
+            sine_amplitude = (self.state.resolver_sine_max - self.state.resolver_sine_min) / 2.0
+            cosine_amplitude = (self.state.resolver_cosine_max - self.state.resolver_cosine_min) / 2.0
+            self.state.resolver_sine_offset_var.set(f"{sine_offset:.2f}")
+            self.state.resolver_cosine_offset_var.set(f"{cosine_offset:.2f}")
+            self.state.resolver_sine_amplitude_var.set(f"{sine_amplitude:.2f}")
+            self.state.resolver_cosine_amplitude_var.set(f"{cosine_amplitude:.2f}")
+            self.state.resolver_gain_ratio_var.set(
+                "—" if cosine_amplitude == 0 else f"{sine_amplitude / cosine_amplitude:.4f}"
+            )
 
         # Emf: для UI — по ключу "Emf", для расчёта — по "motorEmfCalc" (как в gui_ws)
         Emf_ui_raw = self._get_alias(d, "Emf")
@@ -395,6 +456,12 @@ class Telemetry:
             "MCU_stGateDrv": mcu_gate,
             "MCU_DmpCTrqCurr": mcu_dmp_trq,
             "MCU_VCUWorkMode": mcu_work_mode,
+            "ResolverSine": ResolverSine,
+            "ResolverCosine": ResolverCosine,
+            "ResolverAmplitude": ResolverAmplitude,
+            "ResolverTheta": ResolverTheta,
+            "ResolverThetaCorr": ResolverThetaCorr,
+            "CanMode": can_mode,
         }
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:
             if not isinstance(sample, dict):

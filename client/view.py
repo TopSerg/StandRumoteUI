@@ -33,6 +33,7 @@ class ViewRefs:
     trends_frame: ttk.Frame
     maps_frame: ttk.Frame
     signals_frame: ttk.Frame
+    resolver_frame: ttk.Frame
 
     # Control
     controls_container: ttk.Frame
@@ -178,6 +179,18 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.auto_status_var  = sv(getattr(state, "auto_status_var", None), "idle")
     state.auto_points_var  = sv(getattr(state, "auto_points_var", None), "0")
     state.json_period_ms_var = sv(getattr(state, "json_period_ms_var", None), "500")
+    state.resolver_mode_var = sv(getattr(state, "resolver_mode_var", None), "STOPPED")
+    state.resolver_sine_var = sv(getattr(state, "resolver_sine_var", None), "—")
+    state.resolver_cosine_var = sv(getattr(state, "resolver_cosine_var", None), "—")
+    state.resolver_amplitude_var = sv(getattr(state, "resolver_amplitude_var", None), "—")
+    state.resolver_theta_var = sv(getattr(state, "resolver_theta_var", None), "—")
+    state.resolver_theta_corr_var = sv(getattr(state, "resolver_theta_corr_var", None), "—")
+    state.resolver_capture_count_var = sv(getattr(state, "resolver_capture_count_var", None), "0")
+    state.resolver_sine_offset_var = sv(getattr(state, "resolver_sine_offset_var", None), "—")
+    state.resolver_cosine_offset_var = sv(getattr(state, "resolver_cosine_offset_var", None), "—")
+    state.resolver_sine_amplitude_var = sv(getattr(state, "resolver_sine_amplitude_var", None), "—")
+    state.resolver_cosine_amplitude_var = sv(getattr(state, "resolver_cosine_amplitude_var", None), "—")
+    state.resolver_gain_ratio_var = sv(getattr(state, "resolver_gain_ratio_var", None), "—")
 
     # массивы строк для CAN (12 полей: id, data0..7, len, flags, ts)
     if not getattr(state, "can_rx_data", None) or len(state.can_rx_data) != 12:
@@ -200,6 +213,8 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
                command=lambda: handlers.get("send_cmd", lambda *_: None)("Init")).pack(side="left", padx=(PAD, 4), pady=PAD)
     ttk.Button(toolbar, text="■ Stop", width=14,
                command=lambda: handlers.get("send_cmd", lambda *_: None)("Stop")).pack(side="left", padx=4, pady=PAD)
+    ttk.Button(toolbar, text="Resolver RX", width=14,
+               command=handlers.get("start_resolver_calibration", lambda: None)).pack(side="left", padx=4, pady=PAD)
     ttk.Button(toolbar, text="↺ Reset", width=14,
                command=lambda: handlers.get("send_cmd", lambda *_: None)("Read2")).pack(side="left", padx=4, pady=PAD)
     ttk.Button(toolbar, text="💾 Save", width=14,
@@ -244,7 +259,75 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     trends_frame = ttk.Frame(notebook); notebook.add(trends_frame, text="Trends")
     maps_frame   = ttk.Frame(notebook)
     signals_frame = ttk.Frame(notebook); notebook.add(signals_frame, text="Signals")
+    resolver_frame = ttk.Frame(notebook); notebook.add(resolver_frame, text="Resolver RX")
     auto_frame = ttk.Frame(notebook); notebook.add(auto_frame, text="AutoCal")
+
+    # === Resolver calibration: receive-only, no application CAN frames ===
+    resolver_inner = ttk.Frame(resolver_frame)
+    resolver_inner.pack(fill="both", expand=True, padx=18, pady=18)
+
+    resolver_status = ttk.LabelFrame(resolver_inner, text="Safe calibration mode")
+    resolver_status.pack(fill="x", pady=(0, 12))
+    ttk.Label(resolver_status, textvariable=state.resolver_mode_var,
+              font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
+    ttk.Label(
+        resolver_status,
+        text=("В этом режиме сервер принимает CAN, но блокирует все прикладные кадры TX. "
+              "Перед запуском аппаратно отключите PWM/силовую часть или перезапустите инвертор: "
+              "режим RX не может отменить ранее сохранённую команду."),
+        wraplength=900,
+        justify="left",
+    ).pack(anchor="w", padx=12, pady=(0, 10))
+
+    resolver_buttons = ttk.Frame(resolver_inner)
+    resolver_buttons.pack(fill="x", pady=(0, 12))
+    ttk.Button(resolver_buttons, text="▶ Start RX-only (50 Hz)",
+               command=handlers.get("start_resolver_calibration", lambda: None)).pack(side="left", padx=(0, 8))
+    ttk.Button(resolver_buttons, text="■ Stop CAN",
+               command=lambda: handlers.get("send_cmd", lambda *_: None)("Stop")).pack(side="left")
+    ttk.Button(resolver_buttons, text="Reset capture",
+               command=handlers.get("reset_resolver_capture", lambda: None)).pack(side="left", padx=8)
+
+    resolver_values = ttk.LabelFrame(resolver_inner, text="Live resolver values")
+    resolver_values.pack(fill="x")
+    resolver_fields = [
+        ("Sine (raw ADC - 2048)", state.resolver_sine_var),
+        ("Cosine (raw ADC - 2048)", state.resolver_cosine_var),
+        ("Amplitude sqrt(sin²+cos²)", state.resolver_amplitude_var),
+        ("Theta raw [rad]", state.resolver_theta_var),
+        ("Theta corrected [rad]", state.resolver_theta_corr_var),
+    ]
+    for row, (label, var) in enumerate(resolver_fields):
+        ttk.Label(resolver_values, text=label + ":").grid(row=row, column=0, sticky="e", padx=10, pady=7)
+        ttk.Entry(resolver_values, textvariable=var, width=22, state="readonly").grid(
+            row=row, column=1, sticky="w", padx=10, pady=7
+        )
+    ttk.Label(
+        resolver_values,
+        text=("Проворачивайте вал вручную. Sin и cos должны плавно меняться, иметь близкие амплитуды "
+              "и сдвиг около 90°. Theta должна пройти полный оборот без скачков; для медленной ручной "
+              "калибровки 50 Гц достаточно."),
+        wraplength=900,
+        justify="left",
+    ).grid(row=len(resolver_fields), column=0, columnspan=2, sticky="w", padx=10, pady=(8, 12))
+
+    resolver_stats = ttk.LabelFrame(resolver_inner, text="Full-turn capture")
+    resolver_stats.pack(fill="x", pady=(12, 0))
+    resolver_stat_fields = [
+        ("Samples", state.resolver_capture_count_var),
+        ("Sine offset [ADC counts]", state.resolver_sine_offset_var),
+        ("Cosine offset [ADC counts]", state.resolver_cosine_offset_var),
+        ("Sine amplitude [ADC counts]", state.resolver_sine_amplitude_var),
+        ("Cosine amplitude [ADC counts]", state.resolver_cosine_amplitude_var),
+        ("Gain ratio sine/cosine", state.resolver_gain_ratio_var),
+    ]
+    for row, (label, var) in enumerate(resolver_stat_fields):
+        col = 0 if row < 3 else 2
+        grid_row = row if row < 3 else row - 3
+        ttk.Label(resolver_stats, text=label + ":").grid(row=grid_row, column=col, sticky="e", padx=10, pady=7)
+        ttk.Entry(resolver_stats, textvariable=var, width=18, state="readonly").grid(
+            row=grid_row, column=col + 1, sticky="w", padx=10, pady=7
+        )
 
     # === Control ===
     main_inner = ttk.Frame(main_frame)
@@ -687,6 +770,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         toolbar=toolbar, conn_pill_wrap=pill_wrap,
         notebook=notebook, main_frame=main_frame, ind_frame=ind_frame, log_frame=log_frame,
         trends_frame=trends_frame, maps_frame=maps_frame, signals_frame=signals_frame,
+        resolver_frame=resolver_frame,
         controls_container=controls_container, mode_frame=mode_frame, currents_frame=currents_frame,
         limits_frame=limits_frame, params_frame=params_frame, can_frame=can_frame,
         voltage_frame=voltage_frame, flux_frame=flux_frame,
