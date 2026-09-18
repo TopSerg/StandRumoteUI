@@ -132,7 +132,7 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
 
         case 0x7f: { // MCU_Theta (BO_ 127)
             const uint16_t rawZVTimeStamp  =
-                10;//static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
         
             const uint16_t rawZVTheta =
                 static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16));
@@ -156,19 +156,11 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             const uint16_t rawZVTemperature =
                 static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 9));
         
-            uint16_t rawZVFlux =
+            const uint16_t rawZVFlux =
                 static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 14, 16));
         
-            uint16_t rawZVRs =
+            const uint16_t rawZVRs =
                 static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 30, 16));
-
-            if (const char* debugFlux = std::getenv("WS_DEBUG_ZV_FLUX_RAW")) {
-                rawZVFlux = static_cast<uint16_t>(std::strtoul(debugFlux, nullptr, 0));
-            }
-
-            if (const char* debugRs = std::getenv("WS_DEBUG_ZV_RS_RAW")) {
-                rawZVRs = static_cast<uint16_t>(std::strtoul(debugRs, nullptr, 0));
-            }
         
             data.ZVTemperature = static_cast<float>(rawZVTemperature);
             data.ZVFlux        = static_cast<float>(rawZVFlux) * 0.0001f;
@@ -183,10 +175,10 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         }
 
         case 0x7e: { // MCU_CurrentVoltage (BO_ 126)
-            data.Ud = 100;//static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16)) * 0.1f - 3276.0f;
-            data.Uq = 100;//static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16)) * 0.1f - 3276.0f;
-            data.Id = 100;//static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16)) * 0.1f - 3276.0f;
-            data.Iq = 100;//static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 55, 16)) * 0.1f - 3276.0f;
+            data.Ud = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16)) * 0.1f - 3276.0f;
+            data.Uq = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16)) * 0.1f - 3276.0f;
+            data.Id = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16)) * 0.1f - 3276.0f;
+            data.Iq = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 55, 16)) * 0.1f - 3276.0f;
 
             std::cout << "[RX] CurrentVoltage: Ud=" << data.Ud
                       << " Uq=" << data.Uq
