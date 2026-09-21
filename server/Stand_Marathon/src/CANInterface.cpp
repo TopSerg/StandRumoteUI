@@ -114,7 +114,22 @@ bool CANInterface::send(uint32_t id, const uint8_t* data, uint8_t length) {
         }
         return false;
     }
-    if (!initialized) return false;
+    return writeFrame(id, data, length, "application");
+}
+
+bool CANInterface::sendResolverCalibration(uint32_t id, const uint8_t* data, uint8_t length) {
+    constexpr uint32_t kResolverCalibrationCommandId = 0x301;
+    if (id != kResolverCalibrationCommandId) {
+        if (WS_CAN_LOG()) {
+            std::printf("[CAN TX BLOCKED][CALIBRATION WHITELIST] ID=0x%03X\n", (unsigned)id);
+        }
+        return false;
+    }
+    return writeFrame(id, data, length, "resolver-calibration");
+}
+
+bool CANInterface::writeFrame(uint32_t id, const uint8_t* data, uint8_t length, const char* label) {
+    if (!initialized || !data || length == 0 || length > 8) return false;
 
     TPCANMsg msg{};
     msg.ID = id;
@@ -123,8 +138,8 @@ bool CANInterface::send(uint32_t id, const uint8_t* data, uint8_t length) {
     std::copy(data, data + length, msg.DATA);
 
     if (WS_CAN_LOG()) {
-        std::printf("[CAN TX] ID=0x%03X DLC=%d DATA=%s\n",
-                    (unsigned)id, (int)length, to_hex(data, length).c_str());
+        std::printf("[CAN TX][%s] ID=0x%03X DLC=%d DATA=%s\n",
+                    label, (unsigned)id, (int)length, to_hex(data, length).c_str());
     }
     
     TPCANStatus status = CAN_Write(handle, &msg);

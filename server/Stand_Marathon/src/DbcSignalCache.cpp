@@ -494,6 +494,19 @@ void DbcSignalCache::buildDefaultSelection()
     selectRx("ResolverCosine", [](DataModel& d, double v) { d.ResolverCosine = static_cast<float>(v); });
     selectRx("ResolverTheta", [](DataModel& d, double v) { d.ResolverTheta = static_cast<float>(v); });
     selectRx("ResolverThetaCorr", [](DataModel& d, double v) { d.ResolverThetaCorr = static_cast<float>(v); });
+    selectRx("FluxPositionError", [](DataModel& d, double v) {
+        constexpr double pi = 3.14159265358979323846;
+        constexpr double twoPi = 2.0 * pi;
+        d.FluxPositionError = static_cast<float>(v > pi ? v - twoPi : v);
+    });
+    selectRx("ResolverThetaCorrection", [](DataModel& d, double v) {
+        constexpr double pi = 3.14159265358979323846;
+        constexpr double twoPi = 2.0 * pi;
+        d.ResolverThetaCorrection = static_cast<float>(v > pi ? v - twoPi : v);
+    });
+    selectRx("ResolverElectricalSpeed", [](DataModel& d, double v) { d.ResolverElectricalSpeed = static_cast<float>(v); });
+    selectRx("ResolverCalibrationStatus", [](DataModel& d, double v) { d.ResolverCalibrationStatus = static_cast<uint8_t>(v); });
+    selectRx("ResolverCalibrationAckSequence", [](DataModel& d, double v) { d.ResolverCalibrationAckSequence = static_cast<uint8_t>(v); });
     selectRx("MCU_TrqAbsMax", [](DataModel& d, double v) { d.M_max = static_cast<float>(v); });
     selectRx("MCU_TrqAbsMin", [](DataModel& d, double v) { d.M_min = static_cast<float>(v); });
 
@@ -522,4 +535,9 @@ void DbcSignalCache::buildDefaultSelection()
     selectTx("SendTorque", "VCU_CurrentCommandEnable", [](const DataModel& d) { return d.En_Is ? 1.0 : 0.0; });
     selectTx("SendTorque", "MessageCounter_300", [](const DataModel&) { static uint8_t c = 0; return c++ & 0x0F; });
     selectTx("SendTorque", "Checksum_300", [](const DataModel&) { return 0.0; });
+
+    selectTx("SendResolverCalibration", "ResolverThetaCorrectionCommand", [](const DataModel& d) { return d.ResolverThetaCorrectionCommand; });
+    selectTx("SendResolverCalibration", "ResolverCalibrationEnableCommand", [](const DataModel& d) { return d.ResolverCalibrationEnableCommand; });
+    selectTx("SendResolverCalibration", "ResolverCalibrationCommandSequence", [](const DataModel& d) { return d.ResolverCalibrationCommandSequence; });
+    selectTx("SendResolverCalibration", "ResolverCalibrationMagic", [](const DataModel& d) { return d.ResolverCalibrationMagic; });
 }

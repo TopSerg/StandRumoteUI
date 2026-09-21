@@ -191,6 +191,28 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             break;
         }
 
+        case 0x82: { // MCU_ResolverCalibrationStatus (BO_ 130)
+            if (msg.length < 8) break;
+
+            auto unwrapAngle = [](float angle) {
+                constexpr float pi = 3.14159265358979323846f;
+                constexpr float twoPi = 2.0f * pi;
+                return angle > pi ? angle - twoPi : angle;
+            };
+
+            const uint16_t rawFluxError = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16));
+            const uint16_t rawThetaCorrection = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16));
+            const uint16_t rawElectricalSpeed = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16));
+
+            data.FluxPositionError = unwrapAngle(static_cast<float>(rawFluxError) * 0.0001f);
+            data.ResolverThetaCorrection = unwrapAngle(static_cast<float>(rawThetaCorrection) * 0.0001f);
+            data.ResolverElectricalSpeed = static_cast<float>(rawElectricalSpeed) * 0.1f - 3276.8f;
+            data.ResolverCalibrationStatus = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 55, 8));
+            data.ResolverCalibrationAckSequence = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 63, 8));
+            ++data.ResolverCalibrationStatusCount;
+            break;
+        }
+
         case 0x7e: { // MCU_CurrentVoltage (BO_ 126)
             data.Ud = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 7, 16)) * 0.1f - 3276.0f;
             data.Uq = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 23, 16)) * 0.1f - 3276.0f;

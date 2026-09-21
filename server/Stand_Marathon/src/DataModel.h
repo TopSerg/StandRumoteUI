@@ -101,6 +101,20 @@ struct DataModel {
     float ResolverTheta = 0.0f;
     float ResolverThetaCorr = 0.0f;
 
+    // === Resolver zero-angle calibration status (CAN 0x082, 50 Hz) ===
+    float FluxPositionError = 0.0f;          // signed, wrapped to [-pi, pi], rad
+    float ResolverThetaCorrection = 0.0f;    // correction parameter, signed rad
+    float ResolverElectricalSpeed = 0.0f;    // rad/s
+    uint8_t ResolverCalibrationStatus = 0;   // bit0: flux valid, bit1: command active
+    uint8_t ResolverCalibrationAckSequence = 0;
+    uint64_t ResolverCalibrationStatusCount = 0;
+
+    // Last calibration command sent by the stand (CAN 0x301).
+    float ResolverThetaCorrectionCommand = 0.0f;
+    uint8_t ResolverCalibrationEnableCommand = 0;
+    uint8_t ResolverCalibrationCommandSequence = 0;
+    uint16_t ResolverCalibrationMagic = 0xCA1B;
+
     float Ud = 0;
     float Uq = 0;
     float Id = 0;

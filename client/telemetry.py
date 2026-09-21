@@ -118,6 +118,10 @@ class Telemetry:
                 "ResolverAmplitude",
                 "ResolverTheta",
                 "ResolverThetaCorr",
+                "FluxPositionError",
+                "ResolverThetaCorrection",
+                "ResolverElectricalSpeed",
+                "ResolverCalibrationState",
                 "can_mode",
                 "dbc_signals",
             }:
@@ -300,6 +304,10 @@ class Telemetry:
         ResolverAmplitude = self._as_float(self._get_alias(d, "ResolverAmplitude"))
         ResolverTheta = self._as_float(self._get_alias(d, "ResolverTheta"))
         ResolverThetaCorr = self._as_float(self._get_alias(d, "ResolverThetaCorr"))
+        FluxPositionError = self._as_float(self._get_alias(d, "FluxPositionError"))
+        ResolverThetaCorrection = self._as_float(self._get_alias(d, "ResolverThetaCorrection"))
+        ResolverElectricalSpeed = self._as_float(self._get_alias(d, "ResolverElectricalSpeed"))
+        ResolverCalibrationState = str(d.get("ResolverCalibrationState", ""))
         can_mode = str(d.get("can_mode", ""))
 
         def set_resolver_var(name: str, value, digits: int = 3):
@@ -316,6 +324,12 @@ class Telemetry:
         set_resolver_var("resolver_amplitude_var", ResolverAmplitude)
         set_resolver_var("resolver_theta_var", ResolverTheta, 4)
         set_resolver_var("resolver_theta_corr_var", ResolverThetaCorr, 4)
+        set_resolver_var("resolver_flux_error_var", FluxPositionError, 5)
+        set_resolver_var("resolver_theta_correction_var", ResolverThetaCorrection, 5)
+        set_resolver_var("resolver_electrical_speed_var", ResolverElectricalSpeed, 1)
+        if ResolverCalibrationState:
+            suffix = " — CONVERGED" if d.get("ResolverCalibrationConverged") else ""
+            self.state.resolver_auto_state_var.set(ResolverCalibrationState + suffix)
         if can_mode:
             self.state.resolver_mode_var.set(
                 "ACTIVE — RX ONLY — TX BLOCKED" if d.get("can_rx_only") else can_mode.upper()
@@ -461,6 +475,10 @@ class Telemetry:
             "ResolverAmplitude": ResolverAmplitude,
             "ResolverTheta": ResolverTheta,
             "ResolverThetaCorr": ResolverThetaCorr,
+            "FluxPositionError": FluxPositionError,
+            "ResolverThetaCorrection": ResolverThetaCorrection,
+            "ResolverElectricalSpeed": ResolverElectricalSpeed,
+            "ResolverCalibrationState": ResolverCalibrationState,
             "CanMode": can_mode,
         }
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:

@@ -1,14 +1,23 @@
 //Stand_Marathon/src/StateMachine.cpp
 #include "StateMachine.h"
 #include "CommandSender.h"
+#include "DbcSignalCache.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <algorithm>
+#include <cmath>
 
 StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& cfg)
     : data(model), canInterface(can), config(cfg) {}
 
 void StateMachine::setState(State newState) {
+    const State previousState = currentState.load();
+    if ((previousState == State::ResolverRxInit || previousState == State::ResolverRx) &&
+        newState != State::ResolverRxInit && newState != State::ResolverRx &&
+        resolverCalibration_.active()) {
+        stopResolverAutoCalibration("left_rx_only");
+    }
     if (newState == State::ResolverRxInit || newState == State::ResolverRx) {
         canInterface.setTransmitEnabled(false);
     } else if (newState == State::Read2) {
@@ -131,7 +140,88 @@ void StateMachine::handleResolverRxInit() {
 }
 
 CANMessage StateMachine::handleResolverRx() {
-    return handleRead2();
+    CANMessage msg = handleRead2();
+    updateResolverCalibration();
+    return msg;
+}
+
+bool StateMachine::startResolverAutoCalibration(
+    float gain,
+    float tolerance,
+    float maxStep,
+    std::string& reason)
+{
+    if (currentState.load() != State::ResolverRx) {
+        reason = "Start RX-only first";
+        return false;
+    }
+    if (data.ResolverCalibrationStatusCount == 0) {
+        reason = "No MCU calibration status frame 0x082; flash matching controller firmware";
+        return false;
+    }
+
+    resolverCalibration_.start(data.ResolverThetaCorrection, gain, tolerance, maxStep);
+    resolverCalibrationStatusCount_ = data.ResolverCalibrationStatusCount;
+    t_cal_status_ = clock::now();
+    t_cal_tx_ = clock::now() - PERIOD_CAL;
+    reason = "started";
+    sendResolverCalibrationCommand(true);
+    return true;
+}
+
+void StateMachine::stopResolverAutoCalibration(const std::string& reason)
+{
+    if (resolverCalibration_.active()) {
+        sendResolverCalibrationCommand(false);
+    }
+    resolverCalibration_.stop(reason);
+    data.ResolverCalibrationEnableCommand = 0;
+}
+
+bool StateMachine::sendResolverCalibrationCommand(bool enable)
+{
+    constexpr uint32_t kCommandId = 0x301;
+    constexpr float kOffset = -3.2768f;
+    constexpr float kFactor = 0.0001f;
+
+    uint8_t payload[8] = {0};
+    const float correction = std::clamp(resolverCalibration_.command(), -3.14159265f, 3.14159265f);
+    const uint32_t rawCorrection = static_cast<uint32_t>(std::lround((correction - kOffset) / kFactor));
+    const uint8_t sequence = resolverCalibrationSequence_++;
+
+    packDbcSignal(payload, rawCorrection, 7, 16);
+    packDbcSignal(payload, enable ? 1U : 0U, 23, 8);
+    packDbcSignal(payload, sequence, 31, 8);
+    packDbcSignal(payload, 0xCA1BU, 47, 16);
+
+    data.ResolverThetaCorrectionCommand = correction;
+    data.ResolverCalibrationEnableCommand = enable ? 1 : 0;
+    data.ResolverCalibrationCommandSequence = sequence;
+    const bool sent = canInterface.sendResolverCalibration(kCommandId, payload, 8);
+    if (sent) t_cal_tx_ = clock::now();
+    return sent;
+}
+
+void StateMachine::updateResolverCalibration()
+{
+    if (!resolverCalibration_.active()) return;
+
+    const auto now = clock::now();
+    if (data.ResolverCalibrationStatusCount != resolverCalibrationStatusCount_) {
+        resolverCalibrationStatusCount_ = data.ResolverCalibrationStatusCount;
+        t_cal_status_ = now;
+        const bool fluxValid = (data.ResolverCalibrationStatus & 0x01U) != 0;
+        resolverCalibration_.processSample(data.FluxPositionError, fluxValid);
+    }
+
+    if (now - t_cal_status_ > CAL_STATUS_TIMEOUT) {
+        stopResolverAutoCalibration("telemetry_timeout");
+        return;
+    }
+
+    if (now - t_cal_tx_ >= PERIOD_CAL) {
+        sendResolverCalibrationCommand(true);
+    }
 }
 
 

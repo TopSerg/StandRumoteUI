@@ -24,6 +24,7 @@ set(CORE_SOURCES
     Stand_Marathon/src/ConfigManager.cpp
     Stand_Marathon/src/DbcSignalCache.cpp
     Stand_Marathon/src/MarathonLogic.cpp
+    Stand_Marathon/src/ResolverCalibrationController.cpp
     Stand_Marathon/src/SignalLogger.cpp
     Stand_Marathon/src/StateMachine.cpp
     Stand_Marathon/src/YokogawaDL850E.cpp
