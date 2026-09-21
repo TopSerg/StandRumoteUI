@@ -164,7 +164,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.mode_var = sv(state.mode_var, "currents")
     state.gear_var = sv(state.gear_var, "N")
 
-    state.Id_var = sv(state.Id_var, "-0.5")
+    state.Id_var = sv(state.Id_var, "0.0")
     state.Iq_var = sv(state.Iq_var, "0.0")
 
     state.speed_var  = dv(state.speed_var, 0.0)
@@ -191,6 +191,13 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.resolver_sine_amplitude_var = sv(getattr(state, "resolver_sine_amplitude_var", None), "—")
     state.resolver_cosine_amplitude_var = sv(getattr(state, "resolver_cosine_amplitude_var", None), "—")
     state.resolver_gain_ratio_var = sv(getattr(state, "resolver_gain_ratio_var", None), "—")
+    state.resolver_correction_command_var = sv(getattr(state, "resolver_correction_command_var", None), "0.0")
+    state.resolver_flux_error_var = sv(getattr(state, "resolver_flux_error_var", None), "—")
+    state.resolver_applied_correction_var = sv(getattr(state, "resolver_applied_correction_var", None), "—")
+    state.resolver_electrical_speed_var = sv(getattr(state, "resolver_electrical_speed_var", None), "—")
+    state.resolver_calibration_status_var = sv(getattr(state, "resolver_calibration_status_var", None), "—")
+    state.resolver_ack_sequence_var = sv(getattr(state, "resolver_ack_sequence_var", None), "—")
+    state.can_fault_var = sv(getattr(state, "can_fault_var", None), "OK")
 
     # массивы строк для CAN (12 полей: id, data0..7, len, flags, ts)
     if not getattr(state, "can_rx_data", None) or len(state.can_rx_data) != 12:
@@ -329,6 +336,41 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
             row=grid_row, column=col + 1, sticky="w", padx=10, pady=7
         )
 
+    resolver_zero = ttk.LabelFrame(resolver_inner, text="Electrical zero calibration (normal CAN mode)")
+    resolver_zero.pack(fill="x", pady=(12, 0))
+    zero_fields = [
+        ("Flux position error [rad]", state.resolver_flux_error_var),
+        ("Applied correction [rad]", state.resolver_applied_correction_var),
+        ("Electrical speed [rad/s]", state.resolver_electrical_speed_var),
+        ("Status", state.resolver_calibration_status_var),
+        ("Ack sequence", state.resolver_ack_sequence_var),
+        ("CAN command faults", state.can_fault_var),
+    ]
+    for row, (label, var) in enumerate(zero_fields):
+        col = 0 if row < 3 else 2
+        grid_row = row if row < 3 else row - 3
+        ttk.Label(resolver_zero, text=label + ":").grid(
+            row=grid_row, column=col, sticky="e", padx=10, pady=6
+        )
+        ttk.Entry(resolver_zero, textvariable=var, width=28, state="readonly").grid(
+            row=grid_row, column=col + 1, sticky="w", padx=10, pady=6
+        )
+    ttk.Label(resolver_zero, text="Correction command [rad]:").grid(
+        row=3, column=0, sticky="e", padx=10, pady=8
+    )
+    _make_num_spin(
+        resolver_zero, state.resolver_correction_command_var,
+        from_=-3.1416, to=3.1416, step=0.01, width=12,
+    ).grid(row=3, column=1, sticky="w", padx=10, pady=8)
+    ttk.Button(
+        resolver_zero, text="Apply / keep alive",
+        command=handlers.get("apply_resolver_correction", lambda: None),
+    ).grid(row=3, column=2, sticky="w", padx=10, pady=8)
+    ttk.Button(
+        resolver_zero, text="Disable correction",
+        command=handlers.get("disable_resolver_correction", lambda: None),
+    ).grid(row=3, column=3, sticky="w", padx=10, pady=8)
+
     # === Control ===
     main_inner = ttk.Frame(main_frame)
     main_inner.pack(fill="both", expand=True, padx=10, pady=10)
@@ -415,20 +457,22 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         handlers.get("set_mode", lambda *_: None)(val)
         _configure_main_slider(val)
 
-    ttk.Radiobutton(mode_frame, text="Torque (Ms)", value="torque",
-                    variable=state.mode_var, command=lambda: _on_mode_pick("torque")).grid(row=0, column=0, padx=8, pady=8, sticky="w")
+    ttk.Radiobutton(mode_frame, text="Torque (locked during commissioning)", value="torque",
+                    variable=state.mode_var, command=lambda: _on_mode_pick("torque"),
+                    state="disabled").grid(row=0, column=0, padx=8, pady=8, sticky="w")
     ttk.Radiobutton(mode_frame, text="Currents (Id/Iq)", value="currents",
                     variable=state.mode_var, command=lambda: _on_mode_pick("currents")).grid(row=0, column=1, padx=8, pady=8, sticky="w")
-    ttk.Radiobutton(mode_frame, text="Frequency (ns)", value="speed",
-                    variable=state.mode_var, command=lambda: _on_mode_pick("speed")).grid(row=0, column=2, padx=8, pady=8, sticky="w")
+    ttk.Radiobutton(mode_frame, text="Frequency (locked during commissioning)", value="speed",
+                    variable=state.mode_var, command=lambda: _on_mode_pick("speed"),
+                    state="disabled").grid(row=0, column=2, padx=8, pady=8, sticky="w")
     # Currents
     currents_frame = ttk.LabelFrame(main_inner, text="Currents")
     currents_frame.grid(row=1, column=1, padx=(0,10), pady=10, sticky="nsew")
     ttk.Label(currents_frame, text="Id [A]").grid(row=0, column=0, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Id_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Id_var, from_=-1.0, to=1.0, step=0.1, width=10)\
         .grid(row=0, column=1, sticky="w")
     ttk.Label(currents_frame, text="Iq [A]").grid(row=0, column=2, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Iq_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Iq_var, from_=-1.0, to=1.0, step=0.1, width=10)\
         .grid(row=0, column=3, sticky="w")
 
     # Limits

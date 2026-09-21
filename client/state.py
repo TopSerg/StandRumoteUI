@@ -22,12 +22,16 @@ TELEM_COLUMNS = [
     "MCU_OfsAl", "MCU_Isd", "MCU_Isq", "MCU_bDmpCActv",
     "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode",
     "ResolverSine", "ResolverCosine", "ResolverAmplitude",
-    "ResolverTheta", "ResolverThetaCorr", "CanMode",
+    "ResolverTheta", "ResolverThetaCorr", "ResolverFluxPositionError",
+    "ResolverAppliedCorrection", "ResolverElectricalSpeed",
+    "ResolverCalibrationStatus", "ResolverCalibrationAckSequence",
+    "McuCANFault", "CanMode",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
-DEFAULT_RS_OHMS = 0.05       # Rs по умолчанию, если не приходит в телеметрии
-DEFAULT_POLE_PAIRS = None    # Число пар полюсов, если не приходит (например, 4)
+DEFAULT_RS_OHMS = 0.0087     # Provisional QS138 phase resistance used by firmware
+DEFAULT_POLE_PAIRS = 5       # QS138 commissioning profile
+COMMISSIONING_CURRENT_LIMIT_A = 1.0
 
 # Алиасы полей JSON на случай разных имён
 FIELD_ALIASES = {
@@ -94,10 +98,10 @@ class AppState:
         # --- Режим/передача и включения ---
         self.gear_var = tk.StringVar(master=root, value="N")       # "D" / "R" / "N"
         self.mode_var = tk.StringVar(master=root, value="currents")  # "currents" или "speed"
-        self.En_Is_var = tk.IntVar(master=root, value=1)           # включение токов (используется в SendControl/SendTorque)
+        self.En_Is_var = tk.IntVar(master=root, value=0)           # disabled until explicitly commanded
 
         # --- Параметры управления / лимиты (строки как в исходнике) ---
-        self.Id_var = tk.StringVar(master=root, value="-0.5")
+        self.Id_var = tk.StringVar(master=root, value="0.0")
         self.Iq_var = tk.StringVar(master=root, value="0.0")
         self.M_min_var = tk.StringVar(master=root, value="-50.0")
         self.M_max_var = tk.StringVar(master=root, value="400.0")
@@ -125,6 +129,13 @@ class AppState:
         self.resolver_sine_amplitude_var = tk.StringVar(master=root, value="—")
         self.resolver_cosine_amplitude_var = tk.StringVar(master=root, value="—")
         self.resolver_gain_ratio_var = tk.StringVar(master=root, value="—")
+        self.resolver_correction_command_var = tk.StringVar(master=root, value="0.0")
+        self.resolver_flux_error_var = tk.StringVar(master=root, value="—")
+        self.resolver_applied_correction_var = tk.StringVar(master=root, value="—")
+        self.resolver_electrical_speed_var = tk.StringVar(master=root, value="—")
+        self.resolver_calibration_status_var = tk.StringVar(master=root, value="—")
+        self.resolver_ack_sequence_var = tk.StringVar(master=root, value="—")
+        self.can_fault_var = tk.StringVar(master=root, value="OK")
         self.resolver_sine_min = None
         self.resolver_sine_max = None
         self.resolver_cosine_min = None

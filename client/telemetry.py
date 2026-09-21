@@ -300,6 +300,12 @@ class Telemetry:
         ResolverAmplitude = self._as_float(self._get_alias(d, "ResolverAmplitude"))
         ResolverTheta = self._as_float(self._get_alias(d, "ResolverTheta"))
         ResolverThetaCorr = self._as_float(self._get_alias(d, "ResolverThetaCorr"))
+        ResolverFluxPositionError = self._as_float(d.get("ResolverFluxPositionError"))
+        ResolverAppliedCorrection = self._as_float(d.get("ResolverAppliedCorrection"))
+        ResolverElectricalSpeed = self._as_float(d.get("ResolverElectricalSpeed"))
+        ResolverCalibrationStatus = self._as_float(d.get("ResolverCalibrationStatus"))
+        ResolverCalibrationAckSequence = self._as_float(d.get("ResolverCalibrationAckSequence"))
+        McuCANFault = self._as_float(d.get("McuCANFault"))
         can_mode = str(d.get("can_mode", ""))
 
         def set_resolver_var(name: str, value, digits: int = 3):
@@ -316,6 +322,27 @@ class Telemetry:
         set_resolver_var("resolver_amplitude_var", ResolverAmplitude)
         set_resolver_var("resolver_theta_var", ResolverTheta, 4)
         set_resolver_var("resolver_theta_corr_var", ResolverThetaCorr, 4)
+        set_resolver_var("resolver_flux_error_var", ResolverFluxPositionError, 4)
+        set_resolver_var("resolver_applied_correction_var", ResolverAppliedCorrection, 4)
+        set_resolver_var("resolver_electrical_speed_var", ResolverElectricalSpeed, 1)
+        if ResolverCalibrationAckSequence is not None:
+            self.state.resolver_ack_sequence_var.set(str(int(ResolverCalibrationAckSequence)))
+        status_parts = []
+        if d.get("ResolverSignalsReady"):
+            status_parts.append("signals ready")
+        if d.get("ResolverSpeedValid"):
+            status_parts.append("speed valid")
+        if d.get("ResolverCorrectionActive"):
+            status_parts.append("correction active")
+        self.state.resolver_calibration_status_var.set(
+            ", ".join(status_parts) if status_parts else "not ready"
+        )
+        fault_parts = []
+        if d.get("CurrentCommandTimeoutFault"):
+            fault_parts.append("0x300 timeout")
+        if d.get("CurrentCommandCounterFault"):
+            fault_parts.append("counter")
+        self.state.can_fault_var.set(", ".join(fault_parts) if fault_parts else "OK")
         if can_mode:
             self.state.resolver_mode_var.set(
                 "ACTIVE — RX ONLY — TX BLOCKED" if d.get("can_rx_only") else can_mode.upper()
@@ -461,6 +488,12 @@ class Telemetry:
             "ResolverAmplitude": ResolverAmplitude,
             "ResolverTheta": ResolverTheta,
             "ResolverThetaCorr": ResolverThetaCorr,
+            "ResolverFluxPositionError": ResolverFluxPositionError,
+            "ResolverAppliedCorrection": ResolverAppliedCorrection,
+            "ResolverElectricalSpeed": ResolverElectricalSpeed,
+            "ResolverCalibrationStatus": ResolverCalibrationStatus,
+            "ResolverCalibrationAckSequence": ResolverCalibrationAckSequence,
+            "McuCANFault": McuCANFault,
             "CanMode": can_mode,
         }
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:

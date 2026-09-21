@@ -24,7 +24,7 @@ struct DataModel {
     // === Управление ===
     bool Kl_15 = true;            // Зажигание
     bool En_rem = true;           // Удаленное управление
-    bool En_Is = true;            // Управление током
+    bool En_Is = false;           // Current control is always disabled at startup
     uint8_t Dampf_U = 0;           // Демпф. U
     bool Brake_active = false;     // Тормоз
     bool TCS_active = false;       // TCS
@@ -100,6 +100,24 @@ struct DataModel {
     float ResolverAmplitude = 0.0f;
     float ResolverTheta = 0.0f;
     float ResolverThetaCorr = 0.0f;
+
+    // === Resolver electrical-zero calibration (CAN 0x082/0x301) ===
+    float ResolverFluxPositionError = 0.0f;
+    float ResolverAppliedCorrection = 0.0f;
+    float ResolverElectricalSpeed = 0.0f;
+    uint8_t ResolverCalibrationStatus = 0;
+    uint8_t ResolverCalibrationAckSequence = 0;
+    bool ResolverSpeedValid = false;
+    bool ResolverCorrectionActive = false;
+    bool ResolverSignalsReady = false;
+    bool ResolverCalibrationCommandEnabled = false;
+    float ResolverCalibrationCommand = 0.0f;
+    uint8_t ResolverCalibrationCommandSequence = 0;
+
+    // === Current-command CAN diagnostics (CAN 0x2C6) ===
+    uint8_t McuCANFault = 0;
+    bool CurrentCommandTimeoutFault = false;
+    bool CurrentCommandCounterFault = false;
 
     float Ud = 0;
     float Uq = 0;

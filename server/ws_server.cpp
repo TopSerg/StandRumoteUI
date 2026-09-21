@@ -13,6 +13,8 @@
 #include <iostream>
 #include <type_traits>
 #include <atomic>
+#include <algorithm>
+#include <cmath>
 
 // мои заголовки
 #include "DataModel.h"
@@ -120,6 +122,8 @@ static void apply_torque_fields(const json& j) {
     set_if_present(j, "En_Is", model.En_Is);
     set_if_present(j, "Isd",    model.Isd);
     set_if_present(j, "Isq",    model.Isq);
+    model.Isd = std::clamp(model.Isd, -10.0f, 10.0f);
+    model.Isq = std::clamp(model.Isq, -10.0f, 10.0f);
 }
 
 // Сериализация DataModel в JSON
@@ -181,6 +185,17 @@ std::string serializeData() {
     j["ResolverAmplitude"] = model.ResolverAmplitude;
     j["ResolverTheta"] = model.ResolverTheta;
     j["ResolverThetaCorr"] = model.ResolverThetaCorr;
+    j["ResolverFluxPositionError"] = model.ResolverFluxPositionError;
+    j["ResolverAppliedCorrection"] = model.ResolverAppliedCorrection;
+    j["ResolverElectricalSpeed"] = model.ResolverElectricalSpeed;
+    j["ResolverCalibrationStatus"] = model.ResolverCalibrationStatus;
+    j["ResolverCalibrationAckSequence"] = model.ResolverCalibrationAckSequence;
+    j["ResolverSpeedValid"] = model.ResolverSpeedValid;
+    j["ResolverCorrectionActive"] = model.ResolverCorrectionActive;
+    j["ResolverSignalsReady"] = model.ResolverSignalsReady;
+    j["McuCANFault"] = model.McuCANFault;
+    j["CurrentCommandTimeoutFault"] = model.CurrentCommandTimeoutFault;
+    j["CurrentCommandCounterFault"] = model.CurrentCommandCounterFault;
     j["can_mode"] = sm.stateName();
     j["can_rx_only"] = sm.isRxOnly();
     j["json_period_ms"] = g_json_period_ms.load();
@@ -309,6 +324,36 @@ void handleCommand(const json& j, std::vector<json>& responses) {
         }
         apply_torque_fields(j);
         CommandSender::sendTorqueCommand(can, model);
+    } else if (cmd == "SetResolverCorrection") {
+        if (!can.isTransmitEnabled()) {
+            responses.push_back({
+                {"type", "command_rejected"},
+                {"cmd", cmd},
+                {"reason", "Start normal CAN mode before applying resolver correction"}
+            });
+            return;
+        }
+        const float correction = j.value("correction_rad", 0.0f);
+        if (!std::isfinite(correction) || correction < -3.1415927f || correction > 3.1415927f) {
+            responses.push_back({
+                {"type", "command_rejected"},
+                {"cmd", cmd},
+                {"reason", "Resolver correction must be within [-pi, pi] rad"}
+            });
+            return;
+        }
+        model.ResolverCalibrationCommand = correction;
+        ++model.ResolverCalibrationCommandSequence;
+        model.ResolverCalibrationCommandEnabled = true;
+        CommandSender::sendResolverCalibrationCommand(can, model, true);
+    } else if (cmd == "DisableResolverCorrection") {
+        if (can.isTransmitEnabled()) {
+            ++model.ResolverCalibrationCommandSequence;
+            model.ResolverCalibrationCommandEnabled = false;
+            CommandSender::sendResolverCalibrationCommand(can, model, false);
+        } else {
+            model.ResolverCalibrationCommandEnabled = false;
+        }
     } else if (cmd == "SetJsonPeriod") {
         int period_ms = j.value("period_ms", 500);
         if (period_ms < 1) {
@@ -407,13 +452,13 @@ void do_session(tcp::socket socket) {
         running = false;
         if (updater.joinable()) updater.join();
         sm.setState(State::Stop);
-        can.stop();
+        sm.update();
         std::cout << "[WS] Client disconnected, CAN commands stopped" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[Session error] " << e.what() << std::endl;
         sm.setState(State::Stop);
-        can.stop();
+        sm.update();
     }
 }
 

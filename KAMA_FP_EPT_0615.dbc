@@ -145,6 +145,12 @@ BO_ 768 VCU_to_MCU_CurrentCommand: 8 VCU
  SG_ MessageCounter_300 : 51|4@0+ (1,0) [0|15] ""  MCU
  SG_ Checksum_300 : 63|8@0+ (1,0) [0|255] ""  MCU
 
+BO_ 769 VCU_to_MCU_ResolverCalibration: 7 VCU
+ SG_ ResolverCorrectionCommand : 7|16@0+ (0.0001,-3.2768) [-3.2768|3.2767] "rad" MCU
+ SG_ ResolverCorrectionEnable : 23|8@0+ (1,0) [0|1] "" MCU
+ SG_ ResolverCorrectionSequence : 31|8@0+ (1,0) [0|255] "" MCU
+ SG_ ResolverCorrectionMagic : 47|16@0+ (1,0) [0|65535] "" MCU
+
 BO_ 627 VCU_DCDC: 8 VCU
  SG_ Checksum_273 : 63|8@0+ (1,0) [0|255] ""  POD
  SG_ MessageCounter_273 : 51|4@0+ (1,0) [0|15] ""  POD
@@ -498,6 +504,13 @@ BO_ 129 MCU_ResolverCalibration: 8 MCU
  SG_ ResolverCosine : 23|16@0+ (1,-32768) [-32768|32767] "ADC" VCU
  SG_ ResolverTheta : 39|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
  SG_ ResolverThetaCorr : 55|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
+
+BO_ 130 MCU_ResolverCalibrationStatus: 8 MCU
+ SG_ ResolverFluxPositionError : 7|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
+ SG_ ResolverAppliedCorrection : 23|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
+ SG_ ResolverElectricalSpeed : 39|16@0+ (0.1,-3276.8) [-3276.8|3276.7] "rad/s" VCU
+ SG_ ResolverCalibrationStatus : 55|8@0+ (1,0) [0|255] "" VCU
+ SG_ ResolverCalibrationAckSequence : 63|8@0+ (1,0) [0|255] "" VCU
 
 BO_ 709 MCU_DeratingStatus: 8 MCU
  SG_ MCU_bDernOvrIdc : 6|1@0+ (1,0) [0|1] ""  VCU
@@ -1201,11 +1214,14 @@ BA_ "GenMsgCycleTime" BO_ 124 500;
 BA_ "GenMsgSendType" BO_ 125 0;
 BA_ "GenMsgCycleTime" BO_ 125 20;
 BA_ "GenMsgSendType" BO_ 126 0;
-BA_ "GenMsgCycleTime" BO_ 126 500;
+BA_ "GenMsgCycleTime" BO_ 126 20;
 BA_ "GenMsgSendType" BO_ 127 0;
 BA_ "GenMsgCycleTime" BO_ 127 20;
 BA_ "GenMsgSendType" BO_ 128 0;
 BA_ "GenMsgCycleTime" BO_ 128 500;
+BA_ "GenMsgCycleTime" BO_ 129 20;
+BA_ "GenMsgCycleTime" BO_ 130 20;
+BA_ "GenMsgCycleTime" BO_ 769 100;
 BA_ "GenMsgSendType" BO_ 709 0;
 BA_ "GenMsgCycleTime" BO_ 709 100;
 BA_ "GenMsgSendType" BO_ 710 0;

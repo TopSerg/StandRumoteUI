@@ -16,8 +16,8 @@ c_VcutoMCUCurrentCommand c_VcutoMCUCurrentCommand_gstate;
 c_VcutoMCUCurrentCommand* cpT_VcutoMCUCurrentCommand_gstate = &c_VcutoMCUCurrentCommand_gstate;
 
 void VcutoMCUCurrentCommand::saturateAdj() {
-    this->VcuIdCommand = (float)SaturateSignalFloat(this->VcuIdCommand, -320, 319.9);
-    this->VcuIqCommand = (float)SaturateSignalFloat(this->VcuIqCommand, -320, 319.9);
+    this->VcuIdCommand = (float)SaturateSignalFloat(this->VcuIdCommand, -3200, 3300);
+    this->VcuIqCommand = (float)SaturateSignalFloat(this->VcuIqCommand, -3200, 3300);
     this->VcuCurrentCommandEnable = (uint8_t)SaturateSignalInteger(this->VcuCurrentCommandEnable, 0, 1);
     this->Messagecounter300 = (uint8_t)SaturateSignalInteger(this->Messagecounter300, 0, 15);
     this->Checksum300 = (uint8_t)SaturateSignalInteger(this->Checksum300, 0, 255);
@@ -28,8 +28,8 @@ void VcutoMCUCurrentCommand::rawPack(dbc_can_tx_message_type* transmitPacket) {
 
 	ClearCANDataField(transmitPacket);
 
-    PackSignalToCANPacket(transmitPacket, (uint32_t)((this->VcuIdCommand - -320) / 0.1), 7, 13);
-    PackSignalToCANPacket(transmitPacket, (uint32_t)((this->VcuIqCommand - -320) / 0.1), 23, 13);
+    PackSignalToCANPacket(transmitPacket, (uint32_t)((this->VcuIdCommand - -3200) / 0.1), 7, 16);
+    PackSignalToCANPacket(transmitPacket, (uint32_t)((this->VcuIqCommand - -3200) / 0.1), 23, 16);
     PackSignalToCANPacket(transmitPacket, (uint32_t)((this->VcuCurrentCommandEnable - 0) / 1), 39, 1);
     PackSignalToCANPacket(transmitPacket, (uint32_t)((this->Messagecounter300 - 0) / 1), 51, 4);
     PackSignalToCANPacket(transmitPacket, (uint32_t)((this->Checksum300 - 0) / 1), 63, 8);
@@ -81,8 +81,8 @@ c_VcutoMCUCurrentCommand VcutoMCUCurrentCommand::toc_VcutoMCUCurrentCommand(){
 
 VcutoMCUCurrentCommand::VcutoMCUCurrentCommand(c_VcutoMCUCurrentCommand* self):VcuIdCommand(self->VcuIdCommand), VcuIqCommand(self->VcuIqCommand), VcuCurrentCommandEnable(self->VcuCurrentCommandEnable), Messagecounter300(self->Messagecounter300), Checksum300(self->Checksum300){};
 VcutoMCUCurrentCommand::VcutoMCUCurrentCommand(dbc_can_rx_message_type* receivedPacket, LocalErrorStats errStats){
-    this->VcuIdCommand = (float)(UnpackSignalFromCANPacket(receivedPacket, 7, 13) * 0.1 + -320);
-    this->VcuIqCommand = (float)(UnpackSignalFromCANPacket(receivedPacket, 23, 13) * 0.1 + -320);
+    this->VcuIdCommand = (float)(UnpackSignalFromCANPacket(receivedPacket, 7, 16) * 0.1 + -3200);
+    this->VcuIqCommand = (float)(UnpackSignalFromCANPacket(receivedPacket, 23, 16) * 0.1 + -3200);
     this->VcuCurrentCommandEnable = (uint8_t)(UnpackSignalFromCANPacket(receivedPacket, 39, 1) * 1 + 0);
     this->Messagecounter300 = (uint8_t)(UnpackSignalFromCANPacket(receivedPacket, 51, 4) * 1 + 0);
     this->Checksum300 = (uint8_t)(UnpackSignalFromCANPacket(receivedPacket, 63, 8) * 1 + 0);

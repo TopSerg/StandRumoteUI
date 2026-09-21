@@ -4,7 +4,13 @@ import csv
 from datetime import datetime
 from typing import Optional, Callable
 
-from state import GEAR_MAP, TELEM_COLUMNS, AppState, MOTOR_MODE_MAP
+from state import (
+    GEAR_MAP,
+    TELEM_COLUMNS,
+    AppState,
+    MOTOR_MODE_MAP,
+    COMMISSIONING_CURRENT_LIMIT_A,
+)
 
 
 class Controllers:
@@ -49,6 +55,7 @@ class Controllers:
     def disconnect_ws(self) -> None:
         if self.client:
             try:
+                self.client.send_cmd_threadsafe("Stop")
                 self.client.stop()
             except Exception:
                 pass
@@ -133,6 +140,8 @@ class Controllers:
             "apply_json_period": self.apply_json_period,
             "start_resolver_calibration": self.start_resolver_calibration,
             "reset_resolver_capture": self.reset_resolver_capture,
+            "apply_resolver_correction": self.apply_resolver_correction,
+            "disable_resolver_correction": self.disable_resolver_correction,
 
             # синонимы на всякий случай
             "send_limits_now": self.send_limits_now,
@@ -205,6 +214,32 @@ class Controllers:
         ):
             getattr(self.state, name).set("—")
         self.ui_log("[Resolver] capture statistics reset; rotate the shaft through a full revolution")
+
+    def apply_resolver_correction(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] client is not connected", "ERR")
+            return
+        try:
+            correction = self._get_float(
+                self.state.resolver_correction_command_var, "resolver correction"
+            )
+        except Exception:
+            return
+        if not -3.1415927 <= correction <= 3.1415927:
+            self.ui_log("[Resolver] correction must be within [-pi, pi] rad", "ERR")
+            return
+        self.client.send_json_threadsafe({
+            "cmd": "SetResolverCorrection",
+            "correction_rad": correction,
+        })
+        self.ui_log(f"[Resolver] correction requested: {correction:.4f} rad")
+
+    def disable_resolver_correction(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] client is not connected", "ERR")
+            return
+        self.client.send_json_threadsafe({"cmd": "DisableResolverCorrection"})
+        self.ui_log("[Resolver] runtime correction disabled")
 
     def _apply_json_period_when_connected(self, attempts_left: int = 10) -> None:
         if not self.client:
@@ -353,6 +388,14 @@ class Controllers:
                 isd = self._get_float(self.state.Id_var, "Id")
                 isq = self._get_float(self.state.Iq_var, "Iq")
             except Exception:
+                return
+
+            if (abs(isd) > COMMISSIONING_CURRENT_LIMIT_A or
+                    abs(isq) > COMMISSIONING_CURRENT_LIMIT_A):
+                self.ui_log(
+                    f"[SAFETY] Id/Iq are limited to ±{COMMISSIONING_CURRENT_LIMIT_A:.1f} A during commissioning",
+                    "ERR",
+                )
                 return
 
             ctrl = {
@@ -515,6 +558,13 @@ class Controllers:
             Id = self._get_float(self.state.Id_var, "Id")
             Iq = self._get_float(self.state.Iq_var, "Iq")
         except Exception:
+            return
+
+        if abs(Id) > COMMISSIONING_CURRENT_LIMIT_A or abs(Iq) > COMMISSIONING_CURRENT_LIMIT_A:
+            self.ui_log(
+                f"[SAFETY] Id/Iq are limited to ±{COMMISSIONING_CURRENT_LIMIT_A:.1f} A during commissioning",
+                "ERR",
+            )
             return
 
         self.client.send_json_threadsafe({

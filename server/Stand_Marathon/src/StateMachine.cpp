@@ -9,6 +9,10 @@ StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& c
     : data(model), canInterface(can), config(cfg) {}
 
 void StateMachine::setState(State newState) {
+    if (newState != State::Read2 && canInterface.isTransmitEnabled()) {
+        CommandSender::sendSafeDisable(canInterface, data);
+        canInterface.setTransmitEnabled(false);
+    }
     if (newState == State::ResolverRxInit || newState == State::ResolverRx) {
         canInterface.setTransmitEnabled(false);
     } else if (newState == State::Read2) {
@@ -77,6 +81,12 @@ void StateMachine::periodicTx() {
         CommandSender::sendTorqueCommand(canInterface, data);   // 0x300
         t_curr_ = now;
     }
+
+    if (data.ResolverCalibrationCommandEnabled &&
+        now - t_resolver_cal_ >= PERIOD_RESOLVER_CAL) {
+        CommandSender::sendResolverCalibrationCommand(canInterface, data, true);
+        t_resolver_cal_ = now;
+    }
 }
 
 void StateMachine::update() {
@@ -144,6 +154,10 @@ void StateMachine::handleIdle() {
 void StateMachine::handleInit() {
     std::cout << "[STATE] Init\n";
     canInterface.stop();
+    data.En_Is = false;
+    data.Isd = 0.0f;
+    data.Isq = 0.0f;
+    data.ResolverCalibrationCommandEnabled = false;
     // инициализируем канал параметрами из DataModel (после загрузки INI)
     if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) { // корректнее, чем хардкод:contentReference[oaicite:1]{index=1}
         std::cout << "CAN Initialized\n";
@@ -165,6 +179,15 @@ CANMessage StateMachine::handleRead2() {
 
 void StateMachine::handleStop() {
     std::cout << "[STATE] Stop\n";
+    if (canInterface.isTransmitEnabled()) {
+        CommandSender::sendSafeDisable(canInterface, data);
+    } else {
+        data.En_Is = false;
+        data.Isd = 0.0f;
+        data.Isq = 0.0f;
+        data.ResolverCalibrationCommandEnabled = false;
+    }
+    canInterface.setTransmitEnabled(false);
     canInterface.stop();
     std::cout << "CAN stopped\n";
     setState(State::Idle);

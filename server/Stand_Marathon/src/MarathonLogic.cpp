@@ -120,7 +120,12 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
 
         case 0x2c6: { // MCU_FailureCode (BO_ 710)
             uint8_t failCode = UnpackSignalFromBytes(msg.data, 7, 3);
-            std::cout << "[RX] Error Level (MCU_FailCode1): " << (int)failCode << std::endl;
+            data.McuCANFault = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 63, 8));
+            data.CurrentCommandTimeoutFault = (data.McuCANFault & 0x01U) != 0U;
+            data.CurrentCommandCounterFault = (data.McuCANFault & 0x02U) != 0U;
+            std::cout << "[RX] Error Level (MCU_FailCode1): " << (int)failCode
+                      << " CANFault=0x" << std::hex << (int)data.McuCANFault << std::dec
+                      << std::endl;
             break;
         }
 
@@ -188,6 +193,28 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             data.ResolverAmplitude = std::sqrt(
                 data.ResolverSine * data.ResolverSine +
                 data.ResolverCosine * data.ResolverCosine);
+            break;
+        }
+
+        case 0x82: { // MCU_ResolverCalibrationStatus (BO_ 130)
+            auto unwrapAngle = [](float value) {
+                constexpr float pi = 3.14159265358979323846f;
+                constexpr float twoPi = 6.2831853071795864769f;
+                return value > pi ? value - twoPi : value;
+            };
+            data.ResolverFluxPositionError = unwrapAngle(
+                static_cast<float>(UnpackSignalFromBytes(msg.data, 7, 16)) * 0.0001f);
+            data.ResolverAppliedCorrection = unwrapAngle(
+                static_cast<float>(UnpackSignalFromBytes(msg.data, 23, 16)) * 0.0001f);
+            data.ResolverElectricalSpeed =
+                static_cast<float>(UnpackSignalFromBytes(msg.data, 39, 16)) * 0.1f - 3276.8f;
+            data.ResolverCalibrationStatus = static_cast<uint8_t>(
+                UnpackSignalFromBytes(msg.data, 55, 8));
+            data.ResolverCalibrationAckSequence = static_cast<uint8_t>(
+                UnpackSignalFromBytes(msg.data, 63, 8));
+            data.ResolverSpeedValid = (data.ResolverCalibrationStatus & 0x01U) != 0U;
+            data.ResolverCorrectionActive = (data.ResolverCalibrationStatus & 0x02U) != 0U;
+            data.ResolverSignalsReady = (data.ResolverCalibrationStatus & 0x04U) != 0U;
             break;
         }
 

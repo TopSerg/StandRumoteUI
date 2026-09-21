@@ -219,6 +219,41 @@ void CommandSender::sendTorqueCommand(CANInterface& can, DataModel& data) {
     }
 }
 
+void CommandSender::sendResolverCalibrationCommand(
+    CANInterface& can, const DataModel& data, bool enable) {
+    uint8_t payload[8] = {0};
+    constexpr float kMinCorrection = -3.2768f;
+    constexpr float kMaxCorrection = 3.2767f;
+    const float correction = std::fmax(
+        kMinCorrection, std::fmin(kMaxCorrection, data.ResolverCalibrationCommand));
+    const uint32_t rawTheta = static_cast<uint32_t>(
+        std::lround((correction - kMinCorrection) / 0.0001f));
+
+    PackSignalToBytes(payload, rawTheta, 7, 16);
+    PackSignalToBytes(payload, enable ? 1U : 0U, 23, 8);
+    PackSignalToBytes(payload, data.ResolverCalibrationCommandSequence, 31, 8);
+    PackSignalToBytes(payload, 0xCA1BU, 47, 16);
+    can.send(0x301, payload, 7);
+
+    if (logTxEnabled()) {
+        printCanTxPayload("ResolverCalibration", 0x301, 7, payload);
+    }
+}
+
+void CommandSender::sendSafeDisable(CANInterface& can, DataModel& data) {
+    data.En_Is = false;
+    data.Isd = 0.0f;
+    data.Isq = 0.0f;
+    data.ResolverCalibrationCommandEnabled = false;
+
+    // Send several consecutive counters so the inverter receives an explicit
+    // disable before the CAN interface is closed.
+    for (int i = 0; i < 3; ++i) {
+        sendTorqueCommand(can, data);
+    }
+    sendResolverCalibrationCommand(can, data, false);
+}
+
 bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, const std::string& commandName) {
     const DbcTxMessage* msg = DbcSignalCache::instance().txMessage(commandName);
     if (!msg) {

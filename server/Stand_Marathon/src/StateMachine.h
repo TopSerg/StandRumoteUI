@@ -32,11 +32,13 @@ private:
     clock::time_point t_ctrl_  = t0_;
     clock::time_point t_limit_ = t0_;
     clock::time_point t_curr_  = t0_;
+    clock::time_point t_resolver_cal_ = t0_;
 
     // Периоды сообщений
     static constexpr std::chrono::milliseconds PERIOD_CTRL  {10};   // 0x046
     static constexpr std::chrono::milliseconds PERIOD_LIMIT {20};  // 0x047
     static constexpr std::chrono::milliseconds PERIOD_CURR  {10};   // 0x300
+    static constexpr std::chrono::milliseconds PERIOD_RESOLVER_CAL {100}; // 0x301 keepalive
 
     // Хелперы по состояниям
     void handleIdle();
