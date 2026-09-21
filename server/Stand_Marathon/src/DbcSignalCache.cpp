@@ -1,9 +1,6 @@
 #include "DbcSignalCache.h"
 
-#include "CANInterface.h"
-
 #include <algorithm>
-#include <cmath>
 #include <cctype>
 #include <fstream>
 #include <iostream>
@@ -87,33 +84,6 @@ std::ifstream openDbcConfigFile()
     }
 
     return {};
-}
-
-double clampPhysical(double value, const DbcSignalDef& def)
-{
-    if (def.maxValue > def.minValue) {
-        value = (std::max)(def.minValue, (std::min)(def.maxValue, value));
-    }
-    return value;
-}
-
-uint32_t physicalToRaw(double value, const DbcSignalDef& def)
-{
-    value = clampPhysical(value, def);
-    double raw = (value - def.offset) / def.factor;
-    if (!std::isfinite(raw)) {
-        raw = 0.0;
-    }
-
-    const double rounded = std::round(raw);
-    const uint64_t maxRaw = def.length >= 32 ? 0xffffffffULL : ((1ULL << def.length) - 1ULL);
-    if (rounded < 0.0) {
-        return 0;
-    }
-    if (rounded > static_cast<double>(maxRaw)) {
-        return static_cast<uint32_t>(maxRaw);
-    }
-    return static_cast<uint32_t>(rounded);
 }
 
 std::vector<std::pair<std::string, bool>> configuredCatalogMessages(
@@ -407,6 +377,47 @@ std::vector<DbcSignalDef> DbcSignalCache::messageSignals(uint32_t messageId) con
     return it->second;
 }
 
+void DbcSignalCache::decodeSelectedRx(
+    uint32_t messageId,
+    const uint8_t* payload,
+    uint8_t payloadLength,
+    DataModel& data) const
+{
+    if (!payload) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    const auto message = defsByMessageId_.find(messageId);
+    if (message == defsByMessageId_.end()) {
+        return;
+    }
+
+    for (const DbcSignalDef& def : message->second) {
+        if (selectedRx_.count(def.signalName) == 0 || def.length == 0 || def.length > 32) {
+            continue;
+        }
+
+        const uint8_t currentStartBit = static_cast<uint8_t>((def.length - 1) % 8);
+        const uint8_t startBitInByte = static_cast<uint8_t>(def.startBit % 8);
+        const uint8_t extraByte = startBitInByte < currentStartBit ? 1 : 0;
+        const uint8_t lastByte = static_cast<uint8_t>(
+            def.startBit / 8 + (def.length - 1) / 8 + extraByte);
+        if (lastByte >= payloadLength) {
+            continue;
+        }
+
+        const uint32_t raw = unpackDbcSignal(payload, def.startBit, def.length);
+        data.dbcSignals[def.signalName] = DbcRuntimeSignalValue{
+            def.messageId,
+            def.messageName,
+            def.signalName,
+            raw,
+            static_cast<double>(raw) * def.factor + def.offset,
+        };
+    }
+}
+
 bool DbcSignalCache::setSelection(const std::vector<std::string>& rxNames, const std::vector<std::string>& txNames)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -507,6 +518,18 @@ void DbcSignalCache::buildDefaultSelection()
     selectRx("ResolverElectricalSpeed", [](DataModel& d, double v) { d.ResolverElectricalSpeed = static_cast<float>(v); });
     selectRx("ResolverCalibrationStatus", [](DataModel& d, double v) { d.ResolverCalibrationStatus = static_cast<uint8_t>(v); });
     selectRx("ResolverCalibrationAckSequence", [](DataModel& d, double v) { d.ResolverCalibrationAckSequence = static_cast<uint8_t>(v); });
+    selectRx("IdCommandEcho", [](DataModel& d, double v) { d.IdCommandEcho = static_cast<float>(v); });
+    selectRx("IqCommandEcho", [](DataModel& d, double v) { d.IqCommandEcho = static_cast<float>(v); });
+    selectRx("CurrentCommandAgeMs", [](DataModel& d, double v) { d.CurrentCommandAgeMs = static_cast<uint16_t>(v); });
+    selectRx("McuSafetyFlags", [](DataModel& d, double v) {
+        d.McuSafetyFlags = static_cast<uint8_t>(v);
+        d.PwmEnabled = (d.McuSafetyFlags & 0x01U) != 0;
+        d.PiSaturation = (d.McuSafetyFlags & 0x02U) != 0;
+        d.CurrentCommandEnabled = (d.McuSafetyFlags & 0x04U) != 0;
+        d.CurrentCommandWatchdogExpired = (d.McuSafetyFlags & 0x08U) != 0;
+        d.McuGlobalFault = (d.McuSafetyFlags & 0x10U) != 0;
+    });
+    selectRx("McuFaultReason", [](DataModel& d, double v) { d.McuFaultReason = static_cast<uint8_t>(v); });
     selectRx("MCU_TrqAbsMax", [](DataModel& d, double v) { d.M_max = static_cast<float>(v); });
     selectRx("MCU_TrqAbsMin", [](DataModel& d, double v) { d.M_min = static_cast<float>(v); });
 

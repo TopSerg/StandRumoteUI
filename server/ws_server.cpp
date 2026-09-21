@@ -13,6 +13,8 @@
 #include <iostream>
 #include <type_traits>
 #include <atomic>
+#include <algorithm>
+#include <cmath>
 
 // мои заголовки
 #include "DataModel.h"
@@ -52,6 +54,29 @@ static std::mutex   g_log_mutex;
 static std::ofstream g_log_file;
 static std::atomic<int> g_json_period_ms{500};
 
+namespace {
+constexpr float kCommissioningCurrentLimitA = 10.0f;
+constexpr float kCommissioningSpeedLimitRpm = 1000.0f;
+
+const char* fault_reason_text(uint8_t reason)
+{
+    switch (reason) {
+        case 0: return "none";
+        case 1: return "overcurrent";
+        case 2: return "overvoltage";
+        case 3: return "motor_overtemperature";
+        case 4: return "power_stage_overtemperature";
+        case 5: return "hardware_fault";
+        case 6: return "current_sensor_offset";
+        case 7: return "reference_voltage";
+        case 8: return "current_command_watchdog";
+        default: return "unknown";
+    }
+}
+
+bool nonzero(float value) { return std::fabs(value) > 1.0e-6f; }
+}
+
 static bool env_enabled(const char* name)
 {
     const char* env = std::getenv(name);
@@ -90,7 +115,13 @@ static void log_ws_tx(const std::string& data)
 
 // применить параметры управления (для "SendControl")
 static void apply_control_fields(const json& j) {
-    set_if_present(j, "MotorCtrl",    model.MotorCtrl);
+    if (j.contains("MotorCtrl")) {
+        set_if_present(j, "MotorCtrl", model.MotorCtrl);
+        model.MCU_RequestedState = model.MotorCtrl;
+    } else if (j.contains("ReqState")) {
+        set_if_present(j, "ReqState", model.MotorCtrl);
+        model.MCU_RequestedState = model.MotorCtrl;
+    }
     set_if_present(j, "GearCtrl",     model.GearCtrl);
     set_if_present(j, "Kl_15",        model.Kl_15);
     set_if_present(j, "Brake_active", model.Brake_active);
@@ -99,11 +130,24 @@ static void apply_control_fields(const json& j) {
     // ✳ ДОБАВЛЕНО:
     set_if_present(j, "En_Is",        model.En_Is);
 
-    // Если вы используете отдельный сетпоинт скорости — лучше model.ns_setpoint.
-    // Если его нет — временно кладём в model.ns (но это смешивает измерение и задание):
-    set_if_present(j, "ns",           model.M_desired);
-
-    //set_if_present(j, "M_desired",           model.M_desired);
+    // Canonical field used by the client. Ms/ns remain accepted for older clients.
+    if (j.contains("M_desired")) {
+        set_if_present(j, "M_desired", model.M_desired);
+    } else if (j.contains("Ms")) {
+        set_if_present(j, "Ms", model.M_desired);
+    } else {
+        if (j.contains("ns")) {
+            set_if_present(j, "ns", model.M_desired);
+        } else {
+            // Current-control frames do not carry a torque/speed setpoint;
+            // never leave a previous non-zero setpoint latched.
+            model.M_desired = 0.0f;
+        }
+    }
+    if (model.MotorCtrl == 4) {
+        model.M_desired = std::clamp(
+            model.M_desired, -kCommissioningSpeedLimitRpm, kCommissioningSpeedLimitRpm);
+    }
 }
 
 
@@ -113,6 +157,7 @@ static void apply_limit_fields(const json& j) {
     set_if_present(j, "M_min",       model.M_min);
     set_if_present(j, "M_grad_max",  model.M_grad_max);
     set_if_present(j, "n_max",       model.n_max);
+    model.n_max = std::clamp(model.n_max, 0.0f, kCommissioningSpeedLimitRpm);
 }
 
 // применить Id/Iq и прочее удалённое управление (для "SendTorque")
@@ -120,6 +165,8 @@ static void apply_torque_fields(const json& j) {
     set_if_present(j, "En_Is", model.En_Is);
     set_if_present(j, "Isd",    model.Isd);
     set_if_present(j, "Isq",    model.Isq);
+    model.Isd = std::clamp(model.Isd, -kCommissioningCurrentLimitA, kCommissioningCurrentLimitA);
+    model.Isq = std::clamp(model.Isq, -kCommissioningCurrentLimitA, kCommissioningCurrentLimitA);
 }
 
 // Сериализация DataModel в JSON
@@ -131,6 +178,9 @@ std::string serializeData() {
     j["Isd"] = model.Isd;
     j["Isq"] = model.Isq;
     j["Udc"] = model.Udc;
+    j["MCU_MessageCounter7A"] = model.MCU_MessageCounter7A;
+    j["MCU_ActualTorqueValid"] = model.MCU_ActualTorqueValid;
+    j["MCU_ActualSpeedValid"] = model.MCU_ActualSpeedValid;
     j["M_max"] = model.M_max;
     j["M_min"] = model.M_min;
     j["M_grad_max"] = model.M_grad_max;
@@ -138,6 +188,9 @@ std::string serializeData() {
     j["M_desired"] = model.M_desired;
     j["Kl_15"] = model.Kl_15;
     j["En_Is"] = model.En_Is;
+    j["ControlArmed"] = model.ControlArmed;
+    j["CommissioningCurrentLimitA"] = kCommissioningCurrentLimitA;
+    j["CommissioningSpeedLimitRpm"] = kCommissioningSpeedLimitRpm;
     j["En_rem"] = model.En_rem;
     j["Brake_active"] = model.Brake_active;
     j["TCS_active"] = model.TCS_active;
@@ -150,7 +203,10 @@ std::string serializeData() {
     j["MCU_IGBTTempW"] = model.MCU_IGBTTempW;
     j["MCU_IGBTTempMax"] = model.MCU_IGBTTempMax;
     j["MCU_TempCurrStr"] = model.MCU_TempCurrStr;
+    j["MCU_TempCurrStr1"] = model.MCU_TempCurrStr1;
+    j["MCU_TempCurrStr2"] = model.MCU_TempCurrStr2;
     j["MCU_TempCurrCool"] = model.MCU_TempCurrCool;
+    j["MCU_SW_ver"] = model.MCU_SW_ver;
     j["MCU_OfsAl"] = model.MCU_OfsAl;
     j["MCU_Isd"] = model.MCU_Isd;
     j["MCU_Isq"] = model.MCU_Isq;
@@ -164,6 +220,19 @@ std::string serializeData() {
     j["Uq"] = model.Uq;
     j["Id"] = model.Id;
     j["Iq"] = model.Iq;
+    j["IdCommandEcho"] = model.IdCommandEcho;
+    j["IqCommandEcho"] = model.IqCommandEcho;
+    j["CurrentCommandAgeMs"] = model.CurrentCommandAgeMs;
+    j["PwmEnabled"] = model.PwmEnabled;
+    j["PiSaturation"] = model.PiSaturation;
+    j["CurrentCommandEnabled"] = model.CurrentCommandEnabled;
+    j["CurrentCommandWatchdogExpired"] = model.CurrentCommandWatchdogExpired;
+    j["McuGlobalFault"] = model.McuGlobalFault;
+    j["FaultReasonCode"] = model.McuFaultReason;
+    j["FaultReason"] = fault_reason_text(model.McuFaultReason);
+    j["McuSafetyStatusCount"] = model.McuSafetyStatusCount;
+    j["SafeStopStatus"] = sm.safeStopStatus();
+    j["SafeStopConfirmed"] = sm.safeStopConfirmed();
 
     // ➕ Новые поля из MCU_FluxParams (0x4F7)
     j["Flux"] = model.ZVFlux;
@@ -176,16 +245,24 @@ std::string serializeData() {
     j["ZVRs"] = model.ZVRs;
     j["ZVTimeStamp"] = model.ZVTimeStamp;
     j["ZVThetaCorr"] = model.ZVThetaCorr;
+    j["Theta"] = model.ZVTheta;
+    j["ThetaCorr"] = model.ZVThetaCorr;
+    j["TimeStamp"] = model.ZVTimeStamp;
     j["ResolverSine"] = model.ResolverSine;
     j["ResolverCosine"] = model.ResolverCosine;
     j["ResolverAmplitude"] = model.ResolverAmplitude;
     j["ResolverTheta"] = model.ResolverTheta;
     j["ResolverThetaCorr"] = model.ResolverThetaCorr;
+    j["ResolverCanTimestampUs"] = model.ResolverCanTimestampUs;
+    j["ResolverSampleCount"] = model.ResolverSampleCount;
     j["FluxPositionError"] = model.FluxPositionError;
     j["ResolverThetaCorrection"] = model.ResolverThetaCorrection;
     j["ResolverElectricalSpeed"] = model.ResolverElectricalSpeed;
     j["ResolverCalibrationStatus"] = model.ResolverCalibrationStatus;
     j["ResolverCalibrationAckSequence"] = model.ResolverCalibrationAckSequence;
+    j["ResolverCalibrationStatusCount"] = model.ResolverCalibrationStatusCount;
+    j["ResolverCalibrationCommandSequence"] = model.ResolverCalibrationCommandSequence;
+    j["ResolverCalibrationEnableCommand"] = model.ResolverCalibrationEnableCommand;
     j["ResolverCalibrationCommand"] = sm.resolverCalibrationCommand();
     j["ResolverCalibrationError"] = sm.resolverCalibrationError();
     j["ResolverCalibrationActive"] = sm.resolverCalibrationActive();
@@ -211,7 +288,7 @@ std::string serializeData() {
         });
     }
     for (const LoggedSignalSample& sample : SignalLogger::instance().selectedSamples()) {
-        if (sample.direction == "RX") {
+        if (sample.direction == "RX" || !dbcCache.isTxSelected(sample.signalName)) {
             continue;
         }
         j["dbc_signals"].push_back({
@@ -277,7 +354,19 @@ static json signal_catalog_json()
 void handleCommand(const json& j, std::vector<json>& responses) {
     std::string cmd = j.value("cmd", "");
     if (cmd == "Init") {
+        sm.disarmControl();
         sm.setState(State::Init);
+    } else if (cmd == "ArmControl") {
+        std::string reason;
+        const bool ok = sm.armControl(reason);
+        responses.push_back({
+            {"type", ok ? "control_armed" : "command_rejected"},
+            {"cmd", cmd},
+            {"reason", reason}
+        });
+    } else if (cmd == "DisarmControl") {
+        sm.disarmControl();
+        responses.push_back({{"type", "control_disarmed"}, {"cmd", cmd}});
     } else if (cmd == "StartResolverCalibration" || cmd == "ResolverRx") {
         sm.setState(State::ResolverRxInit);
     } else if (cmd == "StartResolverAutoCalibration") {
@@ -297,8 +386,9 @@ void handleCommand(const json& j, std::vector<json>& responses) {
             {"type", "resolver_calibration_stopped"},
             {"cmd", cmd}
         });
-    } else if (cmd == "Stop") {
-        sm.setState(State::Stop);
+    } else if (cmd == "Stop" || cmd == "SafeStop") {
+        sm.requestSafeStop();
+        responses.push_back({{"type", "safe_stop_started"}, {"cmd", cmd}});
     } else if (cmd == "Read2") {
         sm.setState(State::Read2);
     } else if (cmd == "SaveCfg") {
@@ -309,6 +399,17 @@ void handleCommand(const json& j, std::vector<json>& responses) {
                 {"type", "command_rejected"},
                 {"cmd", cmd},
                 {"reason", "CAN application TX is not enabled in the current mode"}
+            });
+            return;
+        }
+        const bool requestedEnable = j.value("En_Is", model.En_Is);
+        const float requestedSetpoint = j.contains("M_desired")
+            ? j.value("M_desired", 0.0f)
+            : (j.contains("Ms") ? j.value("Ms", 0.0f) : j.value("ns", 0.0f));
+        if (!model.ControlArmed && (requestedEnable || nonzero(requestedSetpoint))) {
+            responses.push_back({
+                {"type", "command_rejected"}, {"cmd", cmd},
+                {"reason", "ARM is required before enabling or sending a non-zero setpoint"}
             });
             return;
         }
@@ -331,6 +432,16 @@ void handleCommand(const json& j, std::vector<json>& responses) {
                 {"type", "command_rejected"},
                 {"cmd", cmd},
                 {"reason", "CAN application TX is not enabled in the current mode"}
+            });
+            return;
+        }
+        const bool requestedEnable = j.value("En_Is", model.En_Is);
+        const float requestedId = j.value("Isd", model.Isd);
+        const float requestedIq = j.value("Isq", model.Isq);
+        if (!model.ControlArmed && (requestedEnable || nonzero(requestedId) || nonzero(requestedIq))) {
+            responses.push_back({
+                {"type", "command_rejected"}, {"cmd", cmd},
+                {"reason", "ARM is required before enabling current control"}
             });
             return;
         }
@@ -433,14 +544,24 @@ void do_session(tcp::socket socket) {
 
         running = false;
         if (updater.joinable()) updater.join();
-        sm.setState(State::Stop);
-        can.stop();
-        std::cout << "[WS] Client disconnected, CAN commands stopped" << std::endl;
+        // Perform the same acknowledged safe-stop sequence on disconnect.  If
+        // the MCU does not answer, leave CAN alive and let its independent
+        // watchdog remove PWM; do not pretend that shutdown was confirmed.
+        sm.requestSafeStop();
+        const auto shutdownDeadline = clock1::now() + std::chrono::milliseconds(2200);
+        while (clock1::now() < shutdownDeadline && !sm.safeStopConfirmed()) {
+            sm.update();
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        if (sm.safeStopConfirmed()) {
+            std::cout << "[WS] Client disconnected, safe stop confirmed" << std::endl;
+        } else {
+            std::cerr << "[WS] Client disconnected, MCU safe-stop ACK not received; CAN left open for watchdog" << std::endl;
+        }
 
     } catch (const std::exception& e) {
         std::cerr << "[Session error] " << e.what() << std::endl;
-        sm.setState(State::Stop);
-        can.stop();
+        sm.requestSafeStop();
     }
 }
 

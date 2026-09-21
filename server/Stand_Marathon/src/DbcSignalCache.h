@@ -56,6 +56,11 @@ public:
     bool initialized() const;
     std::vector<DbcSignalSelectionEntry> selectionCatalog() const;
     std::vector<DbcSignalDef> messageSignals(uint32_t messageId) const;
+    void decodeSelectedRx(
+        uint32_t messageId,
+        const uint8_t* payload,
+        uint8_t payloadLength,
+        DataModel& data) const;
     bool setSelection(const std::vector<std::string>& rxNames, const std::vector<std::string>& txNames);
     bool isRxSelected(const std::string& signalName) const;
     bool isTxSelected(const std::string& signalName) const;

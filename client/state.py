@@ -8,24 +8,123 @@ MONO_FONT = ("Cascadia Mono", 9)  # или "Consolas"
 PAD = 8
 
 # ---------- Константы и алиасы телеметрии ----------
-# Порядок колонок логбука (как в исходном коде)
+# Канонические имена совпадают с JSON-ключами ws_server.cpp.
 TELEM_COLUMNS = [
     "ts",
     "ns", "Ms",
-    "Udc", "Idc", "Isd", "Isq",
+    "Udc", "Idc", "MCU_Isd", "MCU_Isq",
     "Ud", "Uq", "Id", "Iq",
-    "Flux", "Theta", "Temperature", "StatorTemperature",
-    "Rs", "TimeStamp", "ThetaCorr",
+    "IdCommandEcho", "IqCommandEcho", "CurrentCommandAgeMs",
+    "PwmEnabled", "PiSaturation", "CurrentCommandEnabled",
+    "CurrentCommandWatchdogExpired", "FaultReason", "Torque_meter",
+    "Flux", "Theta", "ThetaCorr", "Temperature", "Rs", "TimeStamp",
     "MCU_IGBTTempU", "MCU_IGBTTempV", "MCU_IGBTTempW", "MCU_IGBTTempMax",
-    "MCU_TempCurrStr", "MCU_TempCurrCool",
-    "M_max", "M_min",
-    "MCU_OfsAl", "MCU_Isd", "MCU_Isq", "MCU_bDmpCActv",
-    "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode",
+    "MCU_TempCurrStr", "MCU_TempCurrStr1", "MCU_TempCurrStr2", "MCU_TempCurrCool",
+    "M_desired", "M_max", "M_min", "M_grad_max", "n_max",
+    "Isd", "Isq", "Kl_15", "En_Is", "En_rem", "Brake_active", "TCS_active",
+    "MotorCtrl", "GearCtrl", "SurgeDamperState", "MCU_RequestedState",
+    "MCU_ActualTorqueValid", "MCU_ActualSpeedValid", "MCU_MessageCounter7A",
+    "MCU_OfsAl", "MCU_bDmpCActv",
+    "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode", "MCU_SW_ver",
     "ResolverSine", "ResolverCosine", "ResolverAmplitude",
     "ResolverTheta", "ResolverThetaCorr", "FluxPositionError",
     "ResolverThetaCorrection", "ResolverElectricalSpeed",
+    "ResolverCalibrationStatus", "ResolverCalibrationAckSequence",
+    "ResolverCalibrationCommand", "ResolverCalibrationError",
     "ResolverCalibrationState", "CanMode",
 ]
+
+# key -> (понятное имя, единица, число знаков после запятой).
+# Этот словарь — единственный источник названий в UI.
+FIELD_SPECS = {
+    "ns": ("Motor speed", "rpm", 0),
+    "Ms": ("Actual torque", "N·m", 1),
+    "Udc": ("DC-link voltage", "V", 1),
+    "Idc": ("Motor current (MCU_IsCurr)", "A", 1),
+    "MCU_Isd": ("Measured d-axis current", "A", 1),
+    "MCU_Isq": ("Measured q-axis current", "A", 1),
+    "Ud": ("d-axis voltage Ud", "V", 2),
+    "Uq": ("q-axis voltage Uq", "V", 2),
+    "Id": ("Id_measured (FOC)", "A", 2),
+    "Iq": ("Iq_measured (FOC)", "A", 2),
+    "IdCommandEcho": ("Id_cmd (MCU echo)", "A", 2),
+    "IqCommandEcho": ("Iq_cmd (MCU echo)", "A", 2),
+    "CurrentCommandAgeMs": ("Current command age", "ms", 0),
+    "PwmEnabled": ("PWM enabled", "", None),
+    "PiSaturation": ("PI saturation", "", None),
+    "CurrentCommandEnabled": ("Current command enabled", "", None),
+    "CurrentCommandWatchdogExpired": ("Current command watchdog", "", None),
+    "FaultReason": ("Fault reason", "", None),
+    "Flux": ("Estimated flux", "", 4),
+    "Theta": ("Electrical angle", "rad", 4),
+    "ThetaCorr": ("Corrected electrical angle", "rad", 4),
+    "Temperature": ("Estimated motor temperature", "°C", 1),
+    "Rs": ("Estimated phase resistance", "Ω", 5),
+    "TimeStamp": ("MCU sample counter", "", 0),
+    "MCU_IGBTTempU": ("IGBT temperature U", "°C", 1),
+    "MCU_IGBTTempV": ("IGBT temperature V", "°C", 1),
+    "MCU_IGBTTempW": ("IGBT temperature W", "°C", 1),
+    "MCU_IGBTTempMax": ("IGBT temperature max", "°C", 1),
+    "MCU_TempCurrStr": ("Motor/stator temperature", "°C", 1),
+    "MCU_TempCurrStr1": ("Stator temperature sensor 1", "°C", 1),
+    "MCU_TempCurrStr2": ("Stator temperature sensor 2", "°C", 1),
+    "MCU_TempCurrCool": ("Coolant/heatsink temperature", "°C", 1),
+    "M_desired": ("Active torque/speed setpoint", "mode dependent", 2),
+    "Isd": ("Commanded d-axis current", "A", 2),
+    "Isq": ("Commanded q-axis current", "A", 2),
+    "M_min": ("Minimum torque limit", "N·m", 1),
+    "M_max": ("Maximum torque limit", "N·m", 1),
+    "M_grad_max": ("Maximum torque gradient", "N·m/s", 0),
+    "n_max": ("Maximum speed", "rpm", 0),
+    "Kl_15": ("KL15 enabled", "", None),
+    "En_Is": ("Current-command mode", "", None),
+    "En_rem": ("Remote control enabled", "", None),
+    "Brake_active": ("Brake pedal active", "", None),
+    "TCS_active": ("TCS active", "", None),
+    "MotorCtrl": ("Requested MCU mode", "code", 0),
+    "GearCtrl": ("Requested gear", "code", 0),
+    "SurgeDamperState": ("Surge damper state", "code", 0),
+    "MCU_RequestedState": ("MCU requested state", "code", 0),
+    "MCU_OfsAl": ("MCU offset angle", "deg", 3),
+    "MCU_bDmpCActv": ("Damping control active", "", None),
+    "MCU_stGateDrv": ("Gate-driver state", "code", 0),
+    "MCU_DmpCTrqCurr": ("Damping torque", "N·m", 2),
+    "MCU_VCUWorkMode": ("MCU work mode", "code", 0),
+    "MCU_SW_ver": ("MCU software version", "", None),
+    "MCU_ActualTorqueValid": ("Actual torque valid", "", None),
+    "MCU_ActualSpeedValid": ("Actual speed valid", "", None),
+    "MCU_MessageCounter7A": ("MCU status counter 0x7A", "", 0),
+}
+
+CONTROL_MONITOR_FIELDS = (
+    "ns", "Ms", "Udc", "Idc", "MCU_Isd", "MCU_Isq",
+    "IdCommandEcho", "IqCommandEcho", "CurrentCommandAgeMs", "PwmEnabled", "PiSaturation", "FaultReason",
+    "MCU_IGBTTempMax", "MCU_TempCurrStr", "MCU_TempCurrCool",
+    "M_min", "M_max", "n_max",
+)
+CURRENT_VOLTAGE_FIELDS = ("Ud", "Uq", "Id", "Iq")
+FLUX_FIELDS = ("Flux", "Theta", "ThetaCorr", "Temperature", "Rs", "TimeStamp")
+
+INDICATION_GROUPS = (
+    ("Measured drive values", ("ns", "Ms", "Udc", "Idc", "MCU_Isd", "MCU_Isq")),
+    ("FOC current and voltage", CURRENT_VOLTAGE_FIELDS),
+    ("Safety / command acknowledgement", ("IdCommandEcho", "IqCommandEcho", "CurrentCommandAgeMs", "PwmEnabled", "PiSaturation", "CurrentCommandEnabled", "CurrentCommandWatchdogExpired", "FaultReason")),
+    ("Flux estimator", FLUX_FIELDS),
+    ("Temperatures", (
+        "MCU_IGBTTempU", "MCU_IGBTTempV", "MCU_IGBTTempW", "MCU_IGBTTempMax",
+        "MCU_TempCurrStr", "MCU_TempCurrStr1", "MCU_TempCurrStr2", "MCU_TempCurrCool",
+    )),
+    ("MCU status", (
+        "MCU_OfsAl", "MCU_bDmpCActv", "MCU_stGateDrv", "MCU_DmpCTrqCurr",
+        "MCU_VCUWorkMode", "MCU_ActualTorqueValid", "MCU_ActualSpeedValid",
+        "MCU_MessageCounter7A", "MCU_SW_ver",
+    )),
+    ("Active commands and limits", (
+        "M_desired", "Isd", "Isq", "M_min", "M_max", "M_grad_max", "n_max",
+        "Kl_15", "En_Is", "En_rem", "Brake_active", "TCS_active",
+        "MotorCtrl", "GearCtrl", "SurgeDamperState", "MCU_RequestedState",
+    )),
+)
 
 # Параметры для онлайн-расчётов Ld/Lq
 DEFAULT_RS_OHMS = 0.05       # Rs по умолчанию, если не приходит в телеметрии
@@ -99,15 +198,18 @@ class AppState:
         # --- Режим/передача и включения ---
         self.gear_var = tk.StringVar(master=root, value="N")       # "D" / "R" / "N"
         self.mode_var = tk.StringVar(master=root, value="currents")  # "currents" или "speed"
-        self.En_Is_var = tk.IntVar(master=root, value=1)           # включение токов (используется в SendControl/SendTorque)
+        self.En_Is_var = tk.IntVar(master=root, value=0)
+        self.control_armed_var = tk.BooleanVar(master=root, value=False)
+        self.control_arm_status_var = tk.StringVar(master=root, value="DISARMED")
+        self.torque_meter_var = tk.StringVar(master=root, value="")
 
         # --- Параметры управления / лимиты (строки как в исходнике) ---
-        self.Id_var = tk.StringVar(master=root, value="-0.5")
+        self.Id_var = tk.StringVar(master=root, value="0.0")
         self.Iq_var = tk.StringVar(master=root, value="0.0")
         self.M_min_var = tk.StringVar(master=root, value="-50.0")
         self.M_max_var = tk.StringVar(master=root, value="400.0")
         self.M_grad_max_var = tk.StringVar(master=root, value="50")
-        self.n_max_var = tk.StringVar(master=root, value="1000")
+        self.n_max_var = tk.StringVar(master=root, value="500")
 
         # --- Скалярные значения для индикации/управления ---
         self.speed_var = tk.DoubleVar(master=root, value=0.0)   # ns (rpm)
@@ -134,6 +236,16 @@ class AppState:
         self.resolver_theta_correction_var = tk.StringVar(master=root, value="—")
         self.resolver_electrical_speed_var = tk.StringVar(master=root, value="—")
         self.resolver_auto_state_var = tk.StringVar(master=root, value="idle")
+        self.resolver_flux_valid_var = tk.StringVar(master=root, value="no")
+        self.resolver_command_active_var = tk.StringVar(master=root, value="no")
+        self.resolver_ack_sequence_var = tk.StringVar(master=root, value="—")
+        self.resolver_command_var = tk.StringVar(master=root, value="—")
+        self.resolver_loop_error_var = tk.StringVar(master=root, value="—")
+        self.resolver_status_count_var = tk.StringVar(master=root, value="0")
+        self.resolver_command_sequence_var = tk.StringVar(master=root, value="—")
+        self.resolver_enable_command_var = tk.StringVar(master=root, value="no")
+        self.resolver_active_var = tk.StringVar(master=root, value="no")
+        self.resolver_converged_var = tk.StringVar(master=root, value="no")
         self.resolver_auto_gain_var = tk.StringVar(master=root, value="0.20")
         self.resolver_auto_tolerance_var = tk.StringVar(master=root, value="0.010")
         self.resolver_auto_max_step_var = tk.StringVar(master=root, value="0.020")
@@ -141,6 +253,19 @@ class AppState:
         self.resolver_sine_max = None
         self.resolver_cosine_min = None
         self.resolver_cosine_max = None
+        self.resolver_samples = deque(maxlen=TREND_CAP * 4)
+        self.resolver_last_sample_count = 0
+        self.resolver_last_unwrapped_theta = None
+        self.resolver_start_marker = None
+        self.resolver_end_marker = None
+        self.resolver_unwrapped_theta_var = tk.StringVar(master=root, value="—")
+        self.resolver_cycle_count_var = tk.StringVar(master=root, value="—")
+        self.resolver_marker_status_var = tk.StringVar(master=root, value="no markers")
+        self.resolver_ellipse_center_var = tk.StringVar(master=root, value="—")
+        self.resolver_ellipse_axes_var = tk.StringVar(master=root, value="—")
+        self.resolver_ellipse_rotation_var = tk.StringVar(master=root, value="—")
+        self.resolver_nonorthogonality_var = tk.StringVar(master=root, value="—")
+        self.resolver_fit_status_var = tk.StringVar(master=root, value="not fitted")
 
         # --- Буферы трендов (все как в gui_ws.py) ---
         self.trend_ts = deque(maxlen=TREND_CAP)    # datetime для оси X
@@ -154,6 +279,9 @@ class AppState:
         self.trend_Iq = deque(maxlen=TREND_CAP)
         self.trend_theta_ts = deque(maxlen=TREND_CAP)
         self.trend_theta = deque(maxlen=TREND_CAP)
+        self.trend_theta_corr = deque(maxlen=TREND_CAP)
+        self.trend_flux_error = deque(maxlen=TREND_CAP)
+        self.trend_Isq = deque(maxlen=TREND_CAP)
 
         # --- Буферы карт (Ld(Id), Lq(Iq), а также Torque/Power vs RPM) ---
         self.map_Id = deque(maxlen=TREND_CAP)      # X для Ld(Id)

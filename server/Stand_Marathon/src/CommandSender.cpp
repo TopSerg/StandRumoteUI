@@ -110,6 +110,7 @@ void CommandSender::sendControlCommand(CANInterface& can, const DataModel& data)
     PackSignalToBytes(payload, 0, 63, 8);
 
     can.send(0x046, payload, 8);
+    SignalLogger::instance().captureSelectedPayload("TX", 0x046, payload, 8);
 
     if (std::getenv("WS_LOG_CAN")) {
         std::printf("[LOG] ControlCommand:\n");
@@ -173,6 +174,7 @@ void CommandSender::sendLimitCommand(CANInterface& can, const DataModel& data) {
 
 
     can.send(0x047, payload, 8);
+    SignalLogger::instance().captureSelectedPayload("TX", 0x047, payload, 8);
 
     if (std::getenv("WS_LOG_CAN")) {
         std::printf("[LOG] LimitCommand:\n");
@@ -211,6 +213,7 @@ void CommandSender::sendTorqueCommand(CANInterface& can, DataModel& data) {
     PackSignalToBytes(payload, 0, 63, 8);
 
     can.send(0x300, payload, 8);
+    SignalLogger::instance().captureSelectedPayload("TX", 0x300, payload, 8);
 
     if (std::getenv("WS_LOG_CAN")) {
         std::printf("[LOG] TorqueCommand: Isd=%.2f Iq=%.2f\n", data.Isd, data.Isq);
@@ -262,18 +265,8 @@ bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, 
         }
     }
 
-    for (const DbcSignalDef& def : cache.messageSignals(msg->messageId)) {
-        const uint32_t raw = unpackDbcSignal(payload, def.startBit, def.length);
-        const double physical = static_cast<double>(raw) * def.factor + def.offset;
-        SignalLogger::instance().log(
-            "TX",
-            def,
-            raw,
-            physical,
-            cache.isTxSelected(def.signalName));
-    }
-
     can.send(msg->messageId, payload, msg->dlc);
+    SignalLogger::instance().captureSelectedPayload("TX", msg->messageId, payload, msg->dlc);
 
     if (logTx) {
         printCanTxPayload(commandName.c_str(), msg->messageId, msg->dlc, payload);
@@ -281,7 +274,5 @@ bool CommandSender::sendCachedCommand(CANInterface& can, const DataModel& data, 
 
     return true;
 }
-
-
 
 

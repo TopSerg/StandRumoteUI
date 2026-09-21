@@ -4,6 +4,10 @@
 #include <sstream>
 #include <algorithm>
 
+namespace {
+constexpr float kCommissioningSpeedLimitRpm = 1000.0f;
+}
+
 ConfigManager::ConfigManager(const std::string& filePath)
     : path(filePath) {}
 
@@ -87,10 +91,13 @@ bool ConfigManager::load(DataModel& d) {
     d.M_max        = readFloat("Motor", "М_max", 10.0f);
     d.dM_damp_Ctrl = readFloat("Motor", "dМ_damp_Ctrl", 0.1f);
     d.i_R          = readFloat("Motor", "i_R", 9.78f);
-    d.En_Is        = readBool("Motor", "En_Is", false);
-    d.Isd        = readFloat("Motor", "Is_sd", 0.0f);
-    d.Isq        = readFloat("Motor", "Is_sq", 0.0f);
-    d.n_max        = readFloat("Motor", "n_max", 1000.0f);
+    // Current commands are never restored from disk.  A stale configuration
+    // must not arm the inverter or inject current on the next start.
+    d.En_Is        = false;
+    d.Isd          = 0.0f;
+    d.Isq          = 0.0f;
+    d.n_max        = std::clamp(readFloat("Motor", "n_max", 500.0f),
+                                0.0f, kCommissioningSpeedLimitRpm);
     d.T_Str_max    = readFloat("Motor", "T_Str_max", 85.0f);
 
     return true;
@@ -124,12 +131,12 @@ bool ConfigManager::save(const DataModel& d) {
     writeFloat("Motor", "М_max", d.M_max);
     writeFloat("Motor", "dМ_damp_Ctrl", d.dM_damp_Ctrl);
     writeFloat("Motor", "i_R", d.i_R);
-    writeBool("Motor", "En_Is", d.En_Is);
-    writeFloat("Motor", "Is_sd", d.Isd);
-    writeFloat("Motor", "Is_sq", d.Isq);
-    writeFloat("Motor", "n_max", d.n_max);
+    // Persist only safe startup values.  ARM is an explicit runtime action.
+    writeBool("Motor", "En_Is", false);
+    writeFloat("Motor", "Is_sd", 0.0f);
+    writeFloat("Motor", "Is_sq", 0.0f);
+    writeFloat("Motor", "n_max", std::clamp(d.n_max, 0.0f, kCommissioningSpeedLimitRpm));
     writeFloat("Motor", "T_Str_max", d.T_Str_max);
 
     return true;
 }
-

@@ -10,7 +10,7 @@
 #include "MarathonLogic.h"
 #include "ResolverCalibrationController.h"
 
-enum class State { Idle, Init, Read2, ResolverRxInit, ResolverRx, Stop, Save_Cfg, Read_Cfg };
+enum class State { Idle, Init, Read2, ResolverRxInit, ResolverRx, SafeStop, Stop, Save_Cfg, Read_Cfg };
 
 class StateMachine {
 public:
@@ -19,6 +19,11 @@ public:
     void setState(State newState);
     void update(); // вызывать часто (каждые 1–5 мс)
     bool isRxOnly() const;
+    bool armControl(std::string& reason);
+    void disarmControl();
+    void requestSafeStop();
+    bool safeStopConfirmed() const { return safeStopConfirmed_; }
+    const std::string& safeStopStatus() const { return safeStopStatus_; }
     const char* stateName() const;
     bool startResolverAutoCalibration(float gain, float tolerance, float maxStep, std::string& reason);
     void stopResolverAutoCalibration(const std::string& reason = "stopped");
@@ -35,6 +40,10 @@ private:
     std::atomic<State> currentState{State::Idle};
 
     bool isOverSpeed = false;
+    bool safeStopConfirmed_ = false;
+    std::string safeStopStatus_ = "idle";
+    uint64_t safeStopStartStatusCount_ = 0;
+    unsigned safeStopFramesSent_ = 0;
 
     using clock = std::chrono::steady_clock;
     clock::time_point t0_ = clock::now();
@@ -43,6 +52,8 @@ private:
     clock::time_point t_curr_  = t0_;
     clock::time_point t_cal_tx_ = t0_;
     clock::time_point t_cal_status_ = t0_;
+    clock::time_point t_safe_stop_ = t0_;
+    clock::time_point t_safe_stop_tx_ = t0_;
 
     ResolverCalibrationController resolverCalibration_;
     uint64_t resolverCalibrationStatusCount_ = 0;
@@ -54,6 +65,8 @@ private:
     static constexpr std::chrono::milliseconds PERIOD_CURR  {10};   // 0x300
     static constexpr std::chrono::milliseconds PERIOD_CAL   {50};   // 0x301 keepalive
     static constexpr std::chrono::milliseconds CAL_STATUS_TIMEOUT {300};
+    static constexpr std::chrono::milliseconds SAFE_STOP_PERIOD {10};
+    static constexpr std::chrono::milliseconds SAFE_STOP_WARN_TIMEOUT {2000};
 
     // Хелперы по состояниям
     void handleIdle();
@@ -61,6 +74,7 @@ private:
     CANMessage handleRead2();
     void handleResolverRxInit();
     CANMessage handleResolverRx();
+    void handleSafeStop();
     void handleStop();
     void handleSaveCfg();
     void handleReadCfg();

@@ -10,6 +10,7 @@ from state import (
     TELEM_COLUMNS,
     DEFAULT_RS_OHMS,
     DEFAULT_POLE_PAIRS,
+    FIELD_SPECS,
 )
 
 
@@ -34,17 +35,25 @@ class Telemetry:
     def start_timers(self):
         # периодический рефреш графиков (минимальный, чтобы не грузить CPU)
         self.root.after(500, self._tick_trends)
+        self.root.after(800, self._tick_maps)
+        self.root.after(500, self._tick_resolver_plot)
 
     def on_status(self, msg: str):
         # Вызывается WSClient при изменении статуса
         def _ui():
             s = msg.lower().strip()
+            if s.startswith("sent:"):
+                self.ui_log(f"[WS] {msg}")
+                return
             if "connected" in s or "open" in s:
                 self.state.conn_var.set("connected")
                 self.state.conn_color.set("#1bb55c")  # зелёный
-            elif "closing" in s or "closed" in s or "disconnected" in s:
+            elif any(word in s for word in ("disabled", "stopped", "closing", "closed", "disconnected")):
                 self.state.conn_var.set("disabled")
                 self.state.conn_color.set("#d72c20")  # красный
+            elif "connecting" in s:
+                self.state.conn_var.set("connecting")
+                self.state.conn_color.set("#d99a00")
             else:
                 self.state.conn_var.set(s)
             self.ui_log(f"[WS] {msg}")
@@ -80,6 +89,40 @@ class Telemetry:
 
             if data.get("type") == "signal_catalog":
                 self._handle_signal_catalog(data)
+                return
+
+            if data.get("type") in {
+                "resolver_calibration_started",
+                "resolver_calibration_stopped",
+                "command_rejected",
+                "control_armed",
+                "control_disarmed",
+                "safe_stop_started",
+            }:
+                msg_type = str(data.get("type"))
+                reason = str(data.get("reason", "")).strip()
+                if msg_type == "resolver_calibration_started":
+                    self.state.resolver_auto_state_var.set("started")
+                elif msg_type == "resolver_calibration_stopped":
+                    self.state.resolver_auto_state_var.set("stopped")
+                elif data.get("cmd") == "StartResolverAutoCalibration":
+                    self.state.resolver_auto_state_var.set(
+                        f"rejected: {reason}" if reason else "rejected"
+                    )
+                elif msg_type == "control_armed":
+                    self.state.control_armed_var.set(True)
+                    self.state.control_arm_status_var.set("ARMED")
+                elif msg_type == "control_disarmed":
+                    self.state.control_armed_var.set(False)
+                    self.state.control_arm_status_var.set("DISARMED")
+                elif msg_type == "safe_stop_started":
+                    self.state.control_armed_var.set(False)
+                    self.state.control_arm_status_var.set("STOP: waiting for MCU ACK…")
+                elif msg_type == "command_rejected" and str(data.get("cmd", "")) in {
+                    "ArmControl", "SendControl", "SendTorque", "SafeStop"
+                }:
+                    self.state.control_arm_status_var.set(f"REJECTED: {reason}" if reason else "REJECTED")
+                self.ui_log(f"[SERVER] {msg_type}" + (f": {reason}" if reason else ""))
                 return
 
             # fallback: по наличию id+direction
@@ -283,6 +326,8 @@ class Telemetry:
         igbt_w = self._as_float(d.get("MCU_IGBTTempW"))
         igbt_max = self._as_float(d.get("MCU_IGBTTempMax"))
         stator = self._as_float(d.get("MCU_TempCurrStr"))
+        stator_1 = self._as_float(d.get("MCU_TempCurrStr1"))
+        stator_2 = self._as_float(d.get("MCU_TempCurrStr2"))
         coolant = self._as_float(d.get("MCU_TempCurrCool"))
         m_max = self._as_float(d.get("M_max"))
         m_min = self._as_float(d.get("M_min"))
@@ -293,6 +338,20 @@ class Telemetry:
         mcu_gate = self._as_float(d.get("MCU_stGateDrv"))
         mcu_dmp_trq = self._as_float(d.get("MCU_DmpCTrqCurr"))
         mcu_work_mode = self._as_float(d.get("MCU_VCUWorkMode"))
+        m_desired = self._as_float(d.get("M_desired"))
+        kl_15 = d.get("Kl_15")
+        en_is = d.get("En_Is")
+        en_rem = d.get("En_rem")
+        brake_active = d.get("Brake_active")
+        tcs_active = d.get("TCS_active")
+        motor_ctrl = self._as_float(d.get("MotorCtrl"))
+        gear_ctrl = self._as_float(d.get("GearCtrl"))
+        surge_damper_state = self._as_float(d.get("SurgeDamperState"))
+        mcu_requested_state = self._as_float(d.get("MCU_RequestedState"))
+        mcu_sw_ver = d.get("MCU_SW_ver")
+        torque_valid = d.get("MCU_ActualTorqueValid")
+        speed_valid = d.get("MCU_ActualSpeedValid")
+        counter_7a = self._as_float(d.get("MCU_MessageCounter7A"))
 
         Flux = self._as_float(self._get_alias(d, "Flux"))
         Theta = self._as_float(self._get_alias(d, "Theta"))
@@ -308,7 +367,37 @@ class Telemetry:
         ResolverThetaCorrection = self._as_float(self._get_alias(d, "ResolverThetaCorrection"))
         ResolverElectricalSpeed = self._as_float(self._get_alias(d, "ResolverElectricalSpeed"))
         ResolverCalibrationState = str(d.get("ResolverCalibrationState", ""))
+        ResolverCalibrationStatus = self._as_float(d.get("ResolverCalibrationStatus"))
+        ResolverCalibrationAckSequence = self._as_float(d.get("ResolverCalibrationAckSequence"))
+        ResolverCalibrationCommand = self._as_float(d.get("ResolverCalibrationCommand"))
+        ResolverCalibrationError = self._as_float(d.get("ResolverCalibrationError"))
+        ResolverCalibrationStatusCount = self._as_float(d.get("ResolverCalibrationStatusCount"))
+        ResolverCalibrationCommandSequence = self._as_float(d.get("ResolverCalibrationCommandSequence"))
+        ResolverCalibrationEnableCommand = d.get("ResolverCalibrationEnableCommand")
+        ResolverCalibrationActive = d.get("ResolverCalibrationActive")
+        ResolverCalibrationConverged = d.get("ResolverCalibrationConverged")
+        ResolverCanTimestampUs = self._as_float(d.get("ResolverCanTimestampUs"))
+        ResolverSampleCount = self._as_float(d.get("ResolverSampleCount"))
+        IdCommandEcho = self._as_float(d.get("IdCommandEcho"))
+        IqCommandEcho = self._as_float(d.get("IqCommandEcho"))
+        CurrentCommandAgeMs = self._as_float(d.get("CurrentCommandAgeMs"))
+        PwmEnabled = d.get("PwmEnabled")
+        PiSaturation = d.get("PiSaturation")
+        CurrentCommandEnabled = d.get("CurrentCommandEnabled")
+        CurrentCommandWatchdogExpired = d.get("CurrentCommandWatchdogExpired")
+        FaultReason = d.get("FaultReason")
+        SafeStopStatus = str(d.get("SafeStopStatus", ""))
+        SafeStopConfirmed = d.get("SafeStopConfirmed")
+        ControlArmed = d.get("ControlArmed")
+        if ControlArmed is not None:
+            self.state.control_armed_var.set(bool(ControlArmed))
+            self.state.control_arm_status_var.set("ARMED" if ControlArmed else "DISARMED")
+        if SafeStopStatus:
+            self.state.control_arm_status_var.set("STOP: " + SafeStopStatus)
+        if SafeStopConfirmed:
+            self.state.control_arm_status_var.set("STOP: confirmed")
         can_mode = str(d.get("can_mode", ""))
+        json_period_ms = self._as_float(d.get("json_period_ms"))
 
         def set_resolver_var(name: str, value, digits: int = 3):
             var = getattr(self.state, name, None)
@@ -327,13 +416,37 @@ class Telemetry:
         set_resolver_var("resolver_flux_error_var", FluxPositionError, 5)
         set_resolver_var("resolver_theta_correction_var", ResolverThetaCorrection, 5)
         set_resolver_var("resolver_electrical_speed_var", ResolverElectricalSpeed, 1)
+        set_resolver_var("resolver_command_var", ResolverCalibrationCommand, 5)
+        set_resolver_var("resolver_loop_error_var", ResolverCalibrationError, 5)
+        if ResolverCalibrationStatusCount is not None:
+            self.state.resolver_status_count_var.set(str(int(ResolverCalibrationStatusCount)))
+        if ResolverCalibrationCommandSequence is not None:
+            self.state.resolver_command_sequence_var.set(str(int(ResolverCalibrationCommandSequence)))
+        if ResolverCalibrationEnableCommand is not None:
+            self.state.resolver_enable_command_var.set(
+                "yes" if bool(ResolverCalibrationEnableCommand) else "no"
+            )
+        if ResolverCalibrationActive is not None:
+            self.state.resolver_active_var.set("yes" if bool(ResolverCalibrationActive) else "no")
+        if ResolverCalibrationConverged is not None:
+            self.state.resolver_converged_var.set(
+                "yes" if bool(ResolverCalibrationConverged) else "no"
+            )
+        if ResolverCalibrationAckSequence is not None:
+            self.state.resolver_ack_sequence_var.set(str(int(ResolverCalibrationAckSequence)))
+        if ResolverCalibrationStatus is not None:
+            status = int(ResolverCalibrationStatus)
+            self.state.resolver_flux_valid_var.set("yes" if status & 0x01 else "no")
+            self.state.resolver_command_active_var.set("yes" if status & 0x02 else "no")
         if ResolverCalibrationState:
-            suffix = " — CONVERGED" if d.get("ResolverCalibrationConverged") else ""
+            suffix = " — CONVERGED" if ResolverCalibrationConverged else ""
             self.state.resolver_auto_state_var.set(ResolverCalibrationState + suffix)
         if can_mode:
             self.state.resolver_mode_var.set(
                 "ACTIVE — RX ONLY — TX BLOCKED" if d.get("can_rx_only") else can_mode.upper()
             )
+        if json_period_ms is not None:
+            self.state.json_period_ms_var.set(str(int(json_period_ms)))
         if d.get("can_rx_only") and ResolverSine is not None and ResolverCosine is not None:
             self.state.resolver_sine_min = (
                 ResolverSine if self.state.resolver_sine_min is None
@@ -365,6 +478,37 @@ class Telemetry:
                 "—" if cosine_amplitude == 0 else f"{sine_amplitude / cosine_amplitude:.4f}"
             )
 
+        # Preserve every raw resolver point with the MCU CAN timestamp.  The
+        # unwrap is done from the received electrical angle, so a 2π crossing
+        # never creates a false jump in the CSV or revolution markers.
+        if (ResolverSine is not None and ResolverCosine is not None and
+                (ResolverSampleCount is None or int(ResolverSampleCount) != self.state.resolver_last_sample_count)):
+            theta_unwrapped = ResolverTheta
+            if ResolverTheta is not None and self.state.resolver_last_unwrapped_theta is not None:
+                previous_wrapped = self.state.resolver_samples[-1].get("theta_wrapped") if self.state.resolver_samples else ResolverTheta
+                delta = ResolverTheta - previous_wrapped
+                while delta > math.pi:
+                    delta -= 2.0 * math.pi
+                while delta < -math.pi:
+                    delta += 2.0 * math.pi
+                theta_unwrapped = self.state.resolver_last_unwrapped_theta + delta
+            if theta_unwrapped is not None:
+                self.state.resolver_last_unwrapped_theta = theta_unwrapped
+                self.state.resolver_unwrapped_theta_var.set(f"{theta_unwrapped:.6f}")
+            self.state.resolver_samples.append({
+                "can_timestamp_us": int(ResolverCanTimestampUs or 0),
+                "received_at": datetime.now().isoformat(timespec="milliseconds"),
+                "sine": ResolverSine,
+                "cosine": ResolverCosine,
+                "theta": ResolverTheta,
+                "theta_corr": ResolverThetaCorr,
+                "theta_wrapped": ResolverTheta,
+                "theta_unwrapped": theta_unwrapped,
+            })
+            self.state.resolver_capture_count_var.set(str(len(self.state.resolver_samples)))
+            if ResolverSampleCount is not None:
+                self.state.resolver_last_sample_count = int(ResolverSampleCount)
+
         # Emf: для UI — по ключу "Emf", для расчёта — по "motorEmfCalc" (как в gui_ws)
         Emf_ui_raw = self._get_alias(d, "Emf")
         Emf_calc_raw = self._get_alias(
@@ -384,6 +528,10 @@ class Telemetry:
             self._last_pole_pairs = pp
 
         # --- дополнить недостающие величины ---
+        # Resolver status 0x082 is the canonical live electrical speed source.
+        if We is None and ResolverElectricalSpeed is not None:
+            We = ResolverElectricalSpeed
+
         # 1) если НЕТ электрической скорости, но есть мех. и пары полюсов → восстановить We
         if We is None and (Wm is not None) and (self._last_pole_pairs is not None):
             try:
@@ -395,92 +543,71 @@ class Telemetry:
         if ns is None and Wm is not None:
             ns = Wm * 60.0 / (2.0 * math.pi)
 
-        # --- обновить "панель индикации" (entry_vars) если есть ---
-        ev = getattr(self.state, "entry_vars", None)
-        if isinstance(ev, dict):
-
-            def put(name: str, val):
-                if name not in ev:  # UI создаст поле позже — игнорируем
-                    return
-                try:
-                    ev[name].set("" if val is None else f"{val:.3f}")
-                except Exception:
-                    pass
-
-            put("Ud", Ud)
-            put("Uq", Uq)
-            put("Id", Id)
-            put("Iq", Iq)
-            put("direct current (Idc)", Idc)
-            put("Stator current d (Isd)", Isd)
-            put("Stator current q (Isq)", Isq)
-            put("DC voltage (Udc)", Udc)
-            put("Torque (Ms)", Ms)
-            put("Speed rotation", ns)
-            put("Flux", Flux)
-            put("Theta", Theta)
-            put("Temperature", Temperature)
-            put("Coolant temperature", coolant)
-            put("IGBT temperature U", igbt_u)
-            put("IGBT temperature V", igbt_v)
-            put("IGBT temperature W", igbt_w)
-            put("IGBT temperature Max", igbt_max)
-            put("Stator temperature", stator)
-            put("M max", m_max)
-            put("M min", m_min)
-            put("M grad max", m_grad_max)
-            put("n max", n_max)
-
-        # --- логбук (в таблицу) ---
-        row = {
-            "ts": datetime.now().strftime("%H:%M:%S.%f")[:-3],
-            "ns": ns,
-            "Ms": Ms,
-            "Udc": Udc,
-            "Idc": Idc,
-            "Isd": Isd,
-            "Isq": Isq,
-            "Ud": Ud,
-            "Uq": Uq,
-            "Id": Id,
-            "Iq": Iq,
-            "Flux": Flux,
-            "Theta": Theta,
-            "Temperature": Temperature,
-            "StatorTemperature": stator,
-            "Emf": Emf,
-            "Welectrical": We,
-            "motorRs": Rs,
-            "Wmechanical": Wm,
-            "Rs": Rs,
-            "TimeStamp": TimeStamp,
-            "ThetaCorr": ThetaCorr,
-            "MCU_IGBTTempU": igbt_u,
-            "MCU_IGBTTempV": igbt_v,
-            "MCU_IGBTTempW": igbt_w,
-            "MCU_IGBTTempMax": igbt_max,
-            "MCU_TempCurrStr": stator,
-            "MCU_TempCurrCool": coolant,
-            "M_max": m_max,
-            "M_min": m_min,
-            "MCU_OfsAl": mcu_ofs_al,
-            "MCU_Isd": mcu_isd,
-            "MCU_Isq": mcu_isq,
-            "MCU_bDmpCActv": mcu_b_dmp,
-            "MCU_stGateDrv": mcu_gate,
-            "MCU_DmpCTrqCurr": mcu_dmp_trq,
-            "MCU_VCUWorkMode": mcu_work_mode,
-            "ResolverSine": ResolverSine,
-            "ResolverCosine": ResolverCosine,
-            "ResolverAmplitude": ResolverAmplitude,
-            "ResolverTheta": ResolverTheta,
+        values = {
+            "ns": ns, "Ms": Ms, "Udc": Udc, "Idc": Idc,
+            "Isd": Isd, "Isq": Isq, "MCU_Isd": mcu_isd, "MCU_Isq": mcu_isq,
+            "Ud": Ud, "Uq": Uq, "Id": Id, "Iq": Iq,
+            "IdCommandEcho": IdCommandEcho, "IqCommandEcho": IqCommandEcho,
+            "CurrentCommandAgeMs": CurrentCommandAgeMs, "PwmEnabled": PwmEnabled,
+            "PiSaturation": PiSaturation, "CurrentCommandEnabled": CurrentCommandEnabled,
+            "CurrentCommandWatchdogExpired": CurrentCommandWatchdogExpired,
+            "FaultReason": FaultReason,
+            "Flux": Flux, "Theta": Theta, "ThetaCorr": ThetaCorr,
+            "Temperature": Temperature, "Rs": Rs, "TimeStamp": TimeStamp,
+            "MCU_IGBTTempU": igbt_u, "MCU_IGBTTempV": igbt_v,
+            "MCU_IGBTTempW": igbt_w, "MCU_IGBTTempMax": igbt_max,
+            "MCU_TempCurrStr": stator, "MCU_TempCurrStr1": stator_1,
+            "MCU_TempCurrStr2": stator_2, "MCU_TempCurrCool": coolant,
+            "M_desired": m_desired, "M_max": m_max, "M_min": m_min,
+            "M_grad_max": m_grad_max, "n_max": n_max,
+            "Kl_15": kl_15, "En_Is": en_is, "En_rem": en_rem,
+            "Brake_active": brake_active, "TCS_active": tcs_active,
+            "MotorCtrl": motor_ctrl, "GearCtrl": gear_ctrl,
+            "SurgeDamperState": surge_damper_state,
+            "MCU_RequestedState": mcu_requested_state,
+            "MCU_ActualTorqueValid": torque_valid,
+            "MCU_ActualSpeedValid": speed_valid,
+            "MCU_MessageCounter7A": counter_7a,
+            "MCU_OfsAl": mcu_ofs_al, "MCU_bDmpCActv": mcu_b_dmp,
+            "MCU_stGateDrv": mcu_gate, "MCU_DmpCTrqCurr": mcu_dmp_trq,
+            "MCU_VCUWorkMode": mcu_work_mode, "MCU_SW_ver": mcu_sw_ver,
+            "ResolverSine": ResolverSine, "ResolverCosine": ResolverCosine,
+            "ResolverAmplitude": ResolverAmplitude, "ResolverTheta": ResolverTheta,
             "ResolverThetaCorr": ResolverThetaCorr,
             "FluxPositionError": FluxPositionError,
             "ResolverThetaCorrection": ResolverThetaCorrection,
             "ResolverElectricalSpeed": ResolverElectricalSpeed,
+            "ResolverCalibrationStatus": ResolverCalibrationStatus,
+            "ResolverCalibrationAckSequence": ResolverCalibrationAckSequence,
+            "ResolverCalibrationCommand": ResolverCalibrationCommand,
+            "ResolverCalibrationError": ResolverCalibrationError,
             "ResolverCalibrationState": ResolverCalibrationState,
             "CanMode": can_mode,
         }
+
+        # Все поля UI привязаны к каноническому JSON-ключу, а не к тексту label.
+        ev = getattr(self.state, "entry_vars", None)
+        if isinstance(ev, dict):
+            for key, var in ev.items():
+                if key not in values:
+                    continue
+                value = values[key]
+                if value is None:
+                    var.set("—")
+                    continue
+                _title, _unit, digits = FIELD_SPECS.get(key, (key, "", 3))
+                if isinstance(value, bool):
+                    var.set("yes" if value else "no")
+                elif isinstance(value, (int, float)) and digits is not None:
+                    var.set(f"{value:.{digits}f}")
+                else:
+                    var.set(str(value))
+
+        # --- логбук (в таблицу) ---
+        row = {"ts": datetime.now().strftime("%H:%M:%S.%f")[:-3]}
+        for key in TELEM_COLUMNS[1:]:
+            row[key] = values.get(key, d.get(key))
+        row["Torque_meter"] = self.state.torque_meter_var.get()
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:
             if not isinstance(sample, dict):
                 continue
@@ -490,8 +617,21 @@ class Telemetry:
         self._append_log_row(row)
 
         # --- буферы для трендов ---
+        now = datetime.now()
+        self._push(self.state.trend_ts, now)
+        self._push(self.state.trend_ns, ns)
+        self._push(self.state.trend_Ms, Ms)
+        self._push(self.state.trend_Idc, Idc)
+        self._push(self.state.trend_Isd, mcu_isd)
+        self._push(self.state.trend_Isq, mcu_isq)
+        self._push(self.state.trend_Ud, Ud)
+        self._push(self.state.trend_Uq, Uq)
+        self._push(self.state.trend_Id, Id)
+        self._push(self.state.trend_Iq, Iq)
         self._push(self.state.trend_theta_ts, TimeStamp)
         self._push(self.state.trend_theta, Theta)
+        self._push(self.state.trend_theta_corr, ThetaCorr)
+        self._push(self.state.trend_flux_error, FluxPositionError)
 
         # --- прямые Ld/Lq из телеметрии, если приходят ---
         Ld_direct = self._as_float(d.get("Ld"))
@@ -516,6 +656,8 @@ class Telemetry:
                 psi_f = Emf_calc / We
             except Exception:
                 psi_f = None
+        if psi_f is None and Flux is not None:
+            psi_f = Flux
 
         # Lq = (Ud - Rs*Id) / (ω * Iq)  (как в gui_ws)
         if (
@@ -555,11 +697,14 @@ class Telemetry:
         # --- карта Torque/Power vs RPM ---
         rpm = ns
         if rpm is not None:
+            meter_torque = self._as_float(self.state.torque_meter_var.get())
+            torque_for_maps = meter_torque if meter_torque is not None else Ms
             self._push(self.state.map_ns, rpm)
             # P_mech = τ * ω_m (Вт) → кВт
             p_mech = None
-            if Ms is not None and Wm is not None:
-                p_mech = Ms * Wm / 1000.0
+            if torque_for_maps is not None:
+                omega_mechanical = Wm if Wm is not None else rpm * 2.0 * math.pi / 60.0
+                p_mech = torque_for_maps * omega_mechanical / 1000.0
             # P_elec = u_d i_d + u_q i_q (Вт) → кВт
             p_elec = None
             if (
@@ -570,7 +715,7 @@ class Telemetry:
             ):
                 p_elec = (Ud * Id + Uq * Iq) / 1000.0
 
-            self._push(self.state.map_Ms, Ms)
+            self._push(self.state.map_Ms, torque_for_maps)
             self._push(self.state.map_Pmech, p_mech)
             self._push(self.state.map_Pelec, p_elec)
 
@@ -655,96 +800,23 @@ class Telemetry:
             if not tr:
                 return
             axes = tr.get("axes")
-            lines = tr.get("lines")
+            series = tr.get("series")
             fig = tr.get("fig") or tr.get("figure")
-
-            if axes and lines and self.state.trend_theta and self.state.trend_theta_ts:
-                n = min(len(self.state.trend_theta), len(self.state.trend_theta_ts))
-                lines[0].set_data(
-                    list(self.state.trend_theta_ts)[-n:],
-                    list(self.state.trend_theta)[-n:],
-                )
+            ts = self.state.trend_ts
+            if axes and series and ts:
+                t0 = ts[-1]
+                xs_all = [(t - t0).total_seconds() for t in ts]
+                for line, values in series:
+                    if not values:
+                        line.set_data([], [])
+                        continue
+                    n = min(len(xs_all), len(values))
+                    line.set_data(xs_all[-n:], list(values)[-n:])
                 for ax in axes:
-                    try:
-                        ax.relim()
-                        ax.autoscale_view()
-                    except Exception:
-                        pass
+                    ax.relim()
+                    ax.autoscale_view()
                 if fig:
-                    try:
-                        fig.canvas.draw_idle()
-                    except Exception:
-                        pass
-                return
-
-            # ожидаем порядок линий: (l_ns,l_ms,l_idc,l_isd,l_id,l_iq,l_ud,l_uq)
-            # и 4 оси: ax1..ax4
-            if axes and lines and len(lines) >= 9:
-                # считаем ось X как в gui_ws: время относительно последней точки
-                ts = self.state.trend_ts
-                if ts:
-                    t0 = ts[-1]
-                    xs_all = [(t - t0).total_seconds() for t in ts]
-
-                    # ns, Ms
-                    if self.state.trend_ns:
-                        n = len(self.state.trend_ns)
-                        xs = xs_all[-n:]
-                        lines[0].set_data(xs, list(self.state.trend_ns))
-                    if self.state.trend_Ms:
-                        n = len(self.state.trend_Ms)
-                        xs = xs_all[-n:]
-                        lines[1].set_data(xs, list(self.state.trend_Ms))
-
-                    # Idc / Isd
-                    if self.state.trend_Idc:
-                        n = len(self.state.trend_Idc)
-                        xs = xs_all[-n:]
-                        lines[2].set_data(xs, list(self.state.trend_Idc))
-                    if self.state.trend_Isd:
-                        n = len(self.state.trend_Isd)
-                        xs = xs_all[-n:]
-                        lines[3].set_data(xs, list(self.state.trend_Isd))
-
-                    # Id/Iq/Ud/Uq — общая ось времени
-                    if self.state.trend_Id:
-                        n = len(self.state.trend_Id)
-                        xs = xs_all[-n:]
-                        lines[4].set_data(xs, list(self.state.trend_Id))
-                    if self.state.trend_Iq:
-                        n = len(self.state.trend_Iq)
-                        xs = xs_all[-n:]
-                        lines[5].set_data(xs, list(self.state.trend_Iq))
-                    if self.state.trend_Ud:
-                        n = len(self.state.trend_Ud)
-                        xs = xs_all[-n:]
-                        lines[6].set_data(xs, list(self.state.trend_Ud))
-                    if self.state.trend_Uq:
-                        n = len(self.state.trend_Uq)
-                        xs = xs_all[-n:]
-                        lines[7].set_data(xs, list(self.state.trend_Uq))
-
-                    if self.state.trend_theta and self.state.trend_theta_ts:
-                        n = min(len(self.state.trend_theta), len(self.state.trend_theta_ts))
-                        lines[8].set_data(
-                            list(self.state.trend_theta_ts)[-n:],
-                            list(self.state.trend_theta)[-n:],
-                        )
-
-                    # autoscale
-                    for ax in axes:
-                        try:
-                            ax.set_xlabel("seconds from now")
-                            ax.relim()
-                            ax.autoscale_view()
-                        except Exception:
-                            pass
-
-                    if fig:
-                        try:
-                            fig.canvas.draw_idle()
-                        except Exception:
-                            pass
+                    fig.canvas.draw_idle()
         finally:
             self.root.after(500, self._tick_trends)
 
@@ -816,3 +888,20 @@ class Telemetry:
                     pass
         finally:
             self.root.after(800, self._tick_maps)
+
+    def _tick_resolver_plot(self):
+        try:
+            plot = getattr(self.state, "resolver_plot", {}) or {}
+            line = plot.get("line")
+            ax = plot.get("axes")
+            fig = plot.get("figure")
+            samples = list(getattr(self.state, "resolver_samples", []))
+            if line and samples:
+                line.set_data([s["sine"] for s in samples], [s["cosine"] for s in samples])
+                if ax:
+                    ax.relim()
+                    ax.autoscale_view()
+                if fig:
+                    fig.canvas.draw_idle()
+        finally:
+            self.root.after(500, self._tick_resolver_plot)

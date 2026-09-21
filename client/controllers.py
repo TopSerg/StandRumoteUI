@@ -6,6 +6,9 @@ from typing import Optional, Callable
 
 from state import GEAR_MAP, TELEM_COLUMNS, AppState, MOTOR_MODE_MAP
 
+SAFE_CURRENT_LIMIT_A = 10.0
+SAFE_SPEED_LIMIT_RPM = 1000.0
+
 
 class Controllers:
     """
@@ -126,6 +129,9 @@ class Controllers:
             "send_limits": self.send_limits_now,
             "send_torque": self.send_torque_now,
             "send_control_now": self.send_control_now,
+            "arm_control": self.arm_control,
+            "disarm_control": self.disarm_control,
+            "safe_stop": self.safe_stop,
             "apply_mode": self.apply_mode,           # аналог старого set_mode_from_ui
             "set_mode_from_ui": self.apply_mode,     # синоним для совместимости
 
@@ -146,6 +152,10 @@ class Controllers:
             "toggle_logging": self.toggle_logging,
             "clear_log": self.clear_log,
             "export_csv": self.export_csv,
+            "export_resolver_csv": self.export_resolver_csv,
+            "resolver_mark_start": self.resolver_mark_start,
+            "resolver_mark_end": self.resolver_mark_end,
+            "resolver_fit_ellipse": self.resolver_fit_ellipse,
             "send_fake_can": self.send_fake_can_from_fields,
             "apply_signal_selection": self.apply_signal_selection,
             "toggle_signal_selection": self.toggle_signal_selection,
@@ -158,6 +168,48 @@ class Controllers:
             self.ui_log("[WS] клиент не привязан", "ERR")
             return
         self.client.send_cmd_threadsafe(cmd)
+
+    def arm_control(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        self.client.send_json_threadsafe({"cmd": "ArmControl"})
+        self.state.control_arm_status_var.set("ARM requested…")
+
+    def disarm_control(self) -> None:
+        if not self.client:
+            return
+        self.client.send_json_threadsafe({"cmd": "DisarmControl"})
+        self.state.control_armed_var.set(False)
+        self.state.control_arm_status_var.set("DISARMED")
+
+    def safe_stop(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        self.state.control_armed_var.set(False)
+        self.state.control_arm_status_var.set("STOP: waiting for MCU ACK…")
+        self.client.send_json_threadsafe({"cmd": "SafeStop"})
+
+    def _safe_current(self, var, name: str) -> float:
+        value = self._get_float(var, name)
+        if abs(value) > SAFE_CURRENT_LIMIT_A:
+            self.ui_log(f"[SAFE] {name} ограничен диапазоном ±{SAFE_CURRENT_LIMIT_A:g} A", "ERR")
+            raise ValueError(name)
+        return value
+
+    def _safe_speed(self) -> float:
+        value = self._get_float(self.state.speed_var, "ns")
+        if abs(value) > SAFE_SPEED_LIMIT_RPM:
+            self.ui_log(f"[SAFE] ns ограничен {SAFE_SPEED_LIMIT_RPM:g} rpm", "ERR")
+            raise ValueError("ns")
+        return value
+
+    def _require_arm_for_nonzero(self, *values: float) -> bool:
+        if any(abs(value) > 1.0e-6 for value in values) and not self.state.control_armed_var.get():
+            self.ui_log("[SAFE] Сначала нажмите ARM; ненулевые команды заблокированы", "ERR")
+            return False
+        return True
 
     def apply_json_period(self) -> None:
         if not self.client:
@@ -187,6 +239,8 @@ class Controllers:
             self.ui_log("[WS] клиент не привязан", "ERR")
             return
         self.reset_resolver_capture()
+        self.state.control_armed_var.set(False)
+        self.state.control_arm_status_var.set("DISARMED — RX ONLY")
         self.state.json_period_ms_var.set("20")
         self.client.send_json_threadsafe({"cmd": "SetJsonPeriod", "period_ms": 20})
         self.client.send_json_threadsafe({"cmd": "StartResolverCalibration"})
@@ -200,6 +254,20 @@ class Controllers:
         ):
             setattr(self.state, name, None)
         self.state.resolver_capture_count_var.set("0")
+        self.state.resolver_samples.clear()
+        self.state.resolver_last_sample_count = 0
+        self.state.resolver_last_unwrapped_theta = None
+        self.state.resolver_start_marker = None
+        self.state.resolver_end_marker = None
+        self.state.resolver_unwrapped_theta_var.set("—")
+        self.state.resolver_cycle_count_var.set("—")
+        self.state.resolver_marker_status_var.set("no markers")
+        self.state.resolver_fit_status_var.set("not fitted")
+        for name in (
+            "resolver_ellipse_center_var", "resolver_ellipse_axes_var",
+            "resolver_ellipse_rotation_var", "resolver_nonorthogonality_var",
+        ):
+            getattr(self.state, name).set("—")
         for name in (
             "resolver_sine_offset_var", "resolver_cosine_offset_var",
             "resolver_sine_amplitude_var", "resolver_cosine_amplitude_var",
@@ -391,14 +459,16 @@ class Controllers:
         if mode == "currents":
             # режим тока: общий контроль + токи Id/Iq
             try:
-                isd = self._get_float(self.state.Id_var, "Id")
-                isq = self._get_float(self.state.Iq_var, "Iq")
+                isd = self._safe_current(self.state.Id_var, "Id")
+                isq = self._safe_current(self.state.Iq_var, "Iq")
             except Exception:
+                return
+            if not self._require_arm_for_nonzero(isd, isq):
                 return
 
             ctrl = {
                 "cmd": "SendControl",
-                "En_Is": True,
+                "En_Is": bool(self.state.control_armed_var.get()),
                 "Kl_15": False,
             }
             if gear_code is not None:
@@ -410,7 +480,7 @@ class Controllers:
             self.client.send_json_threadsafe(ctrl)
             self.client.send_json_threadsafe({
                 "cmd": "SendTorque",
-                "En_Is": True,
+                "En_Is": bool(self.state.control_armed_var.get()),
                 "Isd": isd,
                 "Isq": isq,
             })
@@ -425,12 +495,14 @@ class Controllers:
                 Ms = self._get_float(self.state.torque_var, "Ms")
             except Exception:
                 return
+            if not self._require_arm_for_nonzero(Ms):
+                return
 
             ctrl = {
                 "cmd": "SendControl",
                 "En_Is": False,
                 "Kl_15": True,
-                "Ms": Ms,
+                "M_desired": Ms,
             }
             if gear_code is not None:
                 ctrl["GearCtrl"] = int(gear_code)
@@ -447,15 +519,17 @@ class Controllers:
         else:
             # режим частоты: только SendControl с ns
             try:
-                ns = self._get_float(self.state.speed_var, "ns")
+                ns = self._safe_speed()
             except Exception:
+                return
+            if not self._require_arm_for_nonzero(ns):
                 return
 
             ctrl = {
                 "cmd": "SendControl",
                 "En_Is": False,
                 "Kl_15": True,
-                "ns": ns,
+                "M_desired": ns,
             }
             if gear_code is not None:
                 ctrl["GearCtrl"] = int(gear_code)
@@ -482,14 +556,16 @@ class Controllers:
 
         if mode == "speed":
             try:
-                ns = self._get_float(self.state.speed_var, "ns")
+                ns = self._safe_speed()
             except Exception:
+                return
+            if not self._require_arm_for_nonzero(ns):
                 return
             payload = {
                 "cmd": "SendControl",
                 "En_Is": False,
                 "Kl_15": True,
-                "ns": ns,
+                "M_desired": ns,
             }
             if motor_code is not None:
                 payload["MotorCtrl"] = int(motor_code)
@@ -502,11 +578,13 @@ class Controllers:
                 Ms = self._get_float(self.state.torque_var, "Ms")
             except Exception:
                 return
+            if not self._require_arm_for_nonzero(Ms):
+                return
             payload = {
                 "cmd": "SendControl",
                 "En_Is": False,  # momentный режим — En_Is=0, Kl_15=1
                 "Kl_15": True,
-                "Ms": Ms,
+                "M_desired": Ms,
             }
             if motor_code is not None:
                 payload["MotorCtrl"] = int(motor_code)
@@ -517,7 +595,7 @@ class Controllers:
         else:
             payload = {
                 "cmd": "SendControl",
-                "En_Is": True,
+                "En_Is": bool(self.state.control_armed_var.get()),
                 "Kl_15": False,
             }
             if motor_code is not None:
@@ -533,12 +611,16 @@ class Controllers:
             return
 
         try:
+            n_max = self._get_int(self.state.n_max_var, "n_max")
+            if n_max < 0 or n_max > SAFE_SPEED_LIMIT_RPM:
+                self.ui_log(f"[SAFE] n_max должен быть в диапазоне 0…{SAFE_SPEED_LIMIT_RPM:g} rpm", "ERR")
+                return
             payload = {
                 "cmd": "SendLimits",
                 "M_min": self._get_float(self.state.M_min_var, "M_min"),
                 "M_max": self._get_float(self.state.M_max_var, "M_max"),
                 "M_grad_max": self._get_int(self.state.M_grad_max_var, "M_grad_max"),
-                "n_max": self._get_int(self.state.n_max_var, "n_max"),
+                "n_max": n_max,
             }
             print(f"M_min = {payload['M_min']}, M_max = {payload['M_max']}")
         except Exception:
@@ -553,14 +635,16 @@ class Controllers:
             self.ui_log("[WS] клиент не привязан", "ERR")
             return
         try:
-            Id = self._get_float(self.state.Id_var, "Id")
-            Iq = self._get_float(self.state.Iq_var, "Iq")
+            Id = self._safe_current(self.state.Id_var, "Id")
+            Iq = self._safe_current(self.state.Iq_var, "Iq")
         except Exception:
             return
 
+        if not self._require_arm_for_nonzero(Id, Iq):
+            return
         self.client.send_json_threadsafe({
             "cmd": "SendTorque",
-            "En_Is": True,
+            "En_Is": bool(self.state.control_armed_var.get()),
             "Isd": Id,
             "Isq": Iq
         })
@@ -721,10 +805,10 @@ class Controllers:
             self.ui_log("[WS] клиент не привязан", "ERR")
             return
         try:
-            Id = self._get_float(self.state.Id_var, "Id")
-            Iq = self._get_float(self.state.Iq_var, "Iq")
+            Id = self._safe_current(self.state.Id_var, "Id")
+            Iq = self._safe_current(self.state.Iq_var, "Iq")
             torque = self._get_float(self.state.torque_var, "Ms")
-            speed = self._get_float(self.state.speed_var, "ns")
+            speed = self._safe_speed()
         except Exception:
             return
 
@@ -746,3 +830,64 @@ class Controllers:
         }
         self.client.send_json_threadsafe(can_msg)
         self.ui_log("[UI] FakeCAN sent", can_msg)
+
+    def resolver_mark_start(self) -> None:
+        if self.state.resolver_samples:
+            self.state.resolver_start_marker = len(self.state.resolver_samples) - 1
+            self.state.resolver_marker_status_var.set(f"start={self.state.resolver_start_marker}")
+
+    def resolver_mark_end(self) -> None:
+        if self.state.resolver_samples:
+            self.state.resolver_end_marker = len(self.state.resolver_samples) - 1
+            start = self.state.resolver_start_marker
+            end = self.state.resolver_end_marker
+            if start is not None and end >= start:
+                first = self.state.resolver_samples[start].get("theta_unwrapped")
+                last = self.state.resolver_samples[end].get("theta_unwrapped")
+                cycles = (last - first) / (2.0 * 3.141592653589793) if first is not None and last is not None else 0.0
+                self.state.resolver_cycle_count_var.set(f"{cycles:.4f}")
+                self.state.resolver_marker_status_var.set(f"start={start}, end={end}, cycles={cycles:.4f}")
+
+    def resolver_fit_ellipse(self) -> None:
+        samples = list(self.state.resolver_samples)
+        if len(samples) < 20:
+            self.ui_log("[Resolver] минимум 20 точек для ellipse fit", "ERR")
+            return
+        try:
+            import numpy as np
+            x = np.asarray([float(s["sine"]) for s in samples])
+            y = np.asarray([float(s["cosine"]) for s in samples])
+            # Ellipse conic: x² + Bxy + Cy² + Dx + Ey = 1.
+            A = np.column_stack((x * y, y * y, x, y))
+            B, C, D, E = np.linalg.lstsq(A, x * x * -1.0 + 1.0, rcond=None)[0]
+            conic = np.array([[1.0, B / 2.0], [B / 2.0, C]])
+            center = np.linalg.solve(2.0 * conic, np.array([-D, -E]))
+            translated = np.column_stack((x - center[0], y - center[1]))
+            cov = np.cov(translated, rowvar=False)
+            eigvals, eigvecs = np.linalg.eigh(cov)
+            eigvals = np.maximum(eigvals, 0.0)
+            axes = np.sqrt(2.0 * eigvals)
+            order = np.argsort(axes)[::-1]
+            axes = axes[order]
+            vec = eigvecs[:, order[0]]
+            rotation = np.degrees(np.arctan2(vec[1], vec[0]))
+            corr = float(cov[0, 1] / np.sqrt(max(cov[0, 0] * cov[1, 1], 1e-12)))
+            nonorth = np.degrees(np.arcsin(np.clip(abs(corr), 0.0, 1.0)))
+            self.state.resolver_ellipse_center_var.set(f"({center[0]:.2f}, {center[1]:.2f})")
+            self.state.resolver_ellipse_axes_var.set(f"major={axes[0]:.2f}, minor={axes[1]:.2f}")
+            self.state.resolver_ellipse_rotation_var.set(f"{rotation:.2f}°")
+            self.state.resolver_nonorthogonality_var.set(f"{nonorth:.2f}°")
+            self.state.resolver_fit_status_var.set("fit OK")
+        except Exception as exc:
+            self.state.resolver_fit_status_var.set("fit failed")
+            self.ui_log(f"[Resolver] ellipse fit: {exc}", "ERR")
+
+    def export_resolver_csv(self) -> None:
+        fname = f"resolver_points_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        fields = ("can_timestamp_us", "received_at", "sine", "cosine", "theta", "theta_corr", "theta_unwrapped")
+        with open(fname, "w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            for sample in self.state.resolver_samples:
+                writer.writerow({field: sample.get(field, "") for field in fields})
+        self.ui_log(f"💾 resolver points exported: {fname}")

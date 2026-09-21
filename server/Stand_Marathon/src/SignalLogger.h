@@ -27,6 +27,11 @@ public:
         uint32_t raw,
         double physical,
         bool selected);
+    void captureSelectedPayload(
+        const char* direction,
+        uint32_t messageId,
+        const uint8_t* payload,
+        uint8_t payloadLength);
     std::vector<LoggedSignalSample> selectedSamples() const;
 
 private:

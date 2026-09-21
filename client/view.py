@@ -8,7 +8,16 @@ from datetime import datetime
 import csv
 
 # ---- наши модули ----
-from state import AppState as State, PAD, TELEM_COLUMNS
+from state import (
+    AppState as State,
+    PAD,
+    TELEM_COLUMNS,
+    FIELD_SPECS,
+    CONTROL_MONITOR_FIELDS,
+    CURRENT_VOLTAGE_FIELDS,
+    FLUX_FIELDS,
+    INDICATION_GROUPS,
+)
 
 try:
     from state import GEAR_MAP
@@ -127,6 +136,33 @@ def _make_focusable_scale(scale: ttk.Scale, var: tk.Variable, step: float = 1.0)
     scale.bind("<Button-1>", on_click)
 
 
+def _field_label(key: str) -> str:
+    title, unit, _digits = FIELD_SPECS.get(key, (key, "", 3))
+    return f"{title} [{unit}]" if unit else title
+
+
+def _build_telemetry_fields(parent, state: State, keys, columns: int = 1):
+    """Create read-only fields bound by canonical server JSON key."""
+    keys = tuple(keys)
+    rows_per_column = max(1, (len(keys) + columns - 1) // columns)
+    for index, key in enumerate(keys):
+        block = index // rows_per_column
+        row = index % rows_per_column
+        label_col = block * 2
+        value_col = label_col + 1
+        ttk.Label(parent, text=_field_label(key) + ":").grid(
+            row=row, column=label_col, sticky="e", padx=(8, 4), pady=4
+        )
+        var = state.entry_vars.get(key)
+        if var is None:
+            var = tk.StringVar(master=parent, value="—")
+            state.entry_vars[key] = var
+        ttk.Entry(parent, textvariable=var, width=18, state="readonly").grid(
+            row=row, column=value_col, sticky="ew", padx=(0, 8), pady=4
+        )
+        parent.grid_columnconfigure(value_col, weight=1)
+
+
 def _on_arrow_key(event):
     global _active_scale
     if _active_scale is None:
@@ -164,8 +200,10 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.mode_var = sv(state.mode_var, "currents")
     state.gear_var = sv(state.gear_var, "N")
 
-    state.Id_var = sv(state.Id_var, "-0.5")
+    state.Id_var = sv(state.Id_var, "0.0")
     state.Iq_var = sv(state.Iq_var, "0.0")
+    state.torque_meter_var = sv(getattr(state, "torque_meter_var", None), "")
+    state.control_arm_status_var = sv(getattr(state, "control_arm_status_var", None), "DISARMED")
 
     state.speed_var  = dv(state.speed_var, 0.0)
     state.torque_var = dv(state.torque_var, 0.0)
@@ -173,7 +211,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.M_min_var      = sv(state.M_min_var, "-50.0")
     state.M_max_var      = sv(state.M_max_var, "400.0")
     state.M_grad_max_var = sv(state.M_grad_max_var, "50")
-    state.n_max_var      = sv(state.n_max_var, "1000")
+    state.n_max_var      = sv(state.n_max_var, "500")
 
     state.auto_delay_s_var = dv(getattr(state, "auto_delay_s_var", None), 0.5)
     state.auto_status_var  = sv(getattr(state, "auto_status_var", None), "idle")
@@ -195,6 +233,16 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.resolver_theta_correction_var = sv(getattr(state, "resolver_theta_correction_var", None), "—")
     state.resolver_electrical_speed_var = sv(getattr(state, "resolver_electrical_speed_var", None), "—")
     state.resolver_auto_state_var = sv(getattr(state, "resolver_auto_state_var", None), "idle")
+    state.resolver_flux_valid_var = sv(getattr(state, "resolver_flux_valid_var", None), "no")
+    state.resolver_command_active_var = sv(getattr(state, "resolver_command_active_var", None), "no")
+    state.resolver_ack_sequence_var = sv(getattr(state, "resolver_ack_sequence_var", None), "—")
+    state.resolver_command_var = sv(getattr(state, "resolver_command_var", None), "—")
+    state.resolver_loop_error_var = sv(getattr(state, "resolver_loop_error_var", None), "—")
+    state.resolver_status_count_var = sv(getattr(state, "resolver_status_count_var", None), "0")
+    state.resolver_command_sequence_var = sv(getattr(state, "resolver_command_sequence_var", None), "—")
+    state.resolver_enable_command_var = sv(getattr(state, "resolver_enable_command_var", None), "no")
+    state.resolver_active_var = sv(getattr(state, "resolver_active_var", None), "no")
+    state.resolver_converged_var = sv(getattr(state, "resolver_converged_var", None), "no")
     state.resolver_auto_gain_var = sv(getattr(state, "resolver_auto_gain_var", None), "0.20")
     state.resolver_auto_tolerance_var = sv(getattr(state, "resolver_auto_tolerance_var", None), "0.010")
     state.resolver_auto_max_step_var = sv(getattr(state, "resolver_auto_max_step_var", None), "0.020")
@@ -216,10 +264,13 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
 
     ttk.Button(toolbar, text="Send", style="Accent.TButton",
                command=handlers.get("send_all", lambda: None)).pack(side="left", padx=4, pady=PAD)
-    ttk.Button(toolbar, text="▶ Start", width=14,
+    ttk.Button(toolbar, text="▶ Start CAN", width=14,
                command=lambda: handlers.get("send_cmd", lambda *_: None)("Init")).pack(side="left", padx=(PAD, 4), pady=PAD)
-    ttk.Button(toolbar, text="■ Stop", width=14,
-               command=lambda: handlers.get("send_cmd", lambda *_: None)("Stop")).pack(side="left", padx=4, pady=PAD)
+    ttk.Button(toolbar, text="ARM", width=10,
+               command=handlers.get("arm_control", lambda: None)).pack(side="left", padx=4, pady=PAD)
+    ttk.Button(toolbar, text="■ STOP", width=12,
+               command=handlers.get("safe_stop", lambda: None)).pack(side="left", padx=4, pady=PAD)
+    ttk.Label(toolbar, textvariable=state.control_arm_status_var, foreground="#a33").pack(side="left", padx=8, pady=PAD)
     ttk.Button(toolbar, text="Resolver RX", width=14,
                command=handlers.get("start_resolver_calibration", lambda: None)).pack(side="left", padx=4, pady=PAD)
     ttk.Button(toolbar, text="↺ Reset", width=14,
@@ -264,10 +315,42 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     ind_frame    = ttk.Frame(notebook); notebook.add(ind_frame,  text="Indication")
     log_frame    = ttk.Frame(notebook); notebook.add(log_frame,  text="Logbook")
     trends_frame = ttk.Frame(notebook); notebook.add(trends_frame, text="Trends")
-    maps_frame   = ttk.Frame(notebook)
+    maps_frame   = ttk.Frame(notebook); notebook.add(maps_frame, text="Maps")
     signals_frame = ttk.Frame(notebook); notebook.add(signals_frame, text="Signals")
     resolver_frame = ttk.Frame(notebook); notebook.add(resolver_frame, text="Resolver RX")
-    auto_frame = ttk.Frame(notebook); notebook.add(auto_frame, text="AutoCal")
+    # Legacy lookup-table AutoCal has no controller/server handlers. Keep its
+    # frame internal instead of exposing dead buttons in the production UI.
+    auto_frame = ttk.Frame(notebook)
+
+    # === Complete server telemetry ===
+    indication_canvas = tk.Canvas(ind_frame, highlightthickness=0)
+    indication_scroll = ttk.Scrollbar(ind_frame, orient="vertical", command=indication_canvas.yview)
+    indication_inner = ttk.Frame(indication_canvas)
+    indication_inner.bind(
+        "<Configure>",
+        lambda _e: indication_canvas.configure(scrollregion=indication_canvas.bbox("all")),
+    )
+    indication_window = indication_canvas.create_window((0, 0), window=indication_inner, anchor="nw")
+    indication_canvas.bind(
+        "<Configure>",
+        lambda e: indication_canvas.itemconfigure(indication_window, width=e.width),
+    )
+    indication_canvas.configure(yscrollcommand=indication_scroll.set)
+    indication_canvas.pack(side="left", fill="both", expand=True)
+    indication_scroll.pack(side="right", fill="y")
+
+    for group_index, (group_title, group_keys) in enumerate(INDICATION_GROUPS):
+        group = ttk.LabelFrame(indication_inner, text=group_title)
+        group.grid(
+            row=group_index // 2,
+            column=group_index % 2,
+            sticky="nsew",
+            padx=10,
+            pady=8,
+        )
+        _build_telemetry_fields(group, state, group_keys, columns=2)
+    indication_inner.grid_columnconfigure(0, weight=1)
+    indication_inner.grid_columnconfigure(1, weight=1)
 
     # === Resolver calibration: receive-only, no application CAN frames ===
     resolver_inner = ttk.Frame(resolver_frame)
@@ -298,8 +381,8 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     resolver_values = ttk.LabelFrame(resolver_inner, text="Live resolver values")
     resolver_values.pack(fill="x")
     resolver_fields = [
-        ("Sine (raw ADC - 2048)", state.resolver_sine_var),
-        ("Cosine (raw ADC - 2048)", state.resolver_cosine_var),
+        ("Sine (zero-centered ADC counts)", state.resolver_sine_var),
+        ("Cosine (zero-centered ADC counts)", state.resolver_cosine_var),
         ("Amplitude sqrt(sin²+cos²)", state.resolver_amplitude_var),
         ("Theta raw [rad]", state.resolver_theta_var),
         ("Theta corrected [rad]", state.resolver_theta_corr_var),
@@ -337,11 +420,23 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         ("thetaCorr parameter [rad]", state.resolver_theta_correction_var),
         ("electrical speed [rad/s]", state.resolver_electrical_speed_var),
         ("state", state.resolver_auto_state_var),
+        ("flux valid", state.resolver_flux_valid_var),
+        ("MCU command active", state.resolver_command_active_var),
+        ("ACK sequence", state.resolver_ack_sequence_var),
+        ("commanded thetaCorr [rad]", state.resolver_command_var),
+        ("controller error [rad]", state.resolver_loop_error_var),
+        ("status frame count", state.resolver_status_count_var),
+        ("command sequence", state.resolver_command_sequence_var),
+        ("command enabled", state.resolver_enable_command_var),
+        ("stand loop active", state.resolver_active_var),
+        ("stand loop converged", state.resolver_converged_var),
     ]
-    for col, (label, var) in enumerate(auto_live_fields):
-        ttk.Label(resolver_auto, text=label + ":").grid(row=1, column=col * 2, sticky="e", padx=(10, 4), pady=6)
+    for index, (label, var) in enumerate(auto_live_fields):
+        row = 1 + index // 3
+        col = index % 3
+        ttk.Label(resolver_auto, text=label + ":").grid(row=row, column=col * 2, sticky="e", padx=(10, 4), pady=6)
         ttk.Entry(resolver_auto, textvariable=var, width=19, state="readonly").grid(
-            row=1, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=6
+            row=row, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=6
         )
 
     auto_settings = [
@@ -350,20 +445,20 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         ("max step [rad]", state.resolver_auto_max_step_var),
     ]
     for col, (label, var) in enumerate(auto_settings):
-        ttk.Label(resolver_auto, text=label + ":").grid(row=2, column=col * 2, sticky="e", padx=(10, 4), pady=(6, 10))
+        ttk.Label(resolver_auto, text=label + ":").grid(row=6, column=col * 2, sticky="e", padx=(10, 4), pady=(6, 10))
         ttk.Entry(resolver_auto, textvariable=var, width=12).grid(
-            row=2, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=(6, 10)
+            row=6, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=(6, 10)
         )
     ttk.Button(
         resolver_auto,
         text="▶ Start auto thetaCorr",
         command=handlers.get("start_resolver_auto_calibration", lambda: None),
-    ).grid(row=2, column=6, padx=6, pady=(6, 10), sticky="ew")
+    ).grid(row=7, column=0, columnspan=2, padx=10, pady=(0, 10), sticky="ew")
     ttk.Button(
         resolver_auto,
         text="■ Stop auto",
         command=handlers.get("stop_resolver_auto_calibration", lambda: None),
-    ).grid(row=2, column=7, padx=(0, 10), pady=(6, 10), sticky="ew")
+    ).grid(row=7, column=2, columnspan=2, padx=(0, 10), pady=(0, 10), sticky="ew")
 
     resolver_stats = ttk.LabelFrame(resolver_inner, text="Full-turn capture")
     resolver_stats.pack(fill="x", pady=(12, 0))
@@ -374,14 +469,35 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         ("Sine amplitude [ADC counts]", state.resolver_sine_amplitude_var),
         ("Cosine amplitude [ADC counts]", state.resolver_cosine_amplitude_var),
         ("Gain ratio sine/cosine", state.resolver_gain_ratio_var),
+        ("Unwrapped electrical angle [rad]", state.resolver_unwrapped_theta_var),
+        ("Cycles between markers", state.resolver_cycle_count_var),
+        ("Marker status", state.resolver_marker_status_var),
+        ("Ellipse center", state.resolver_ellipse_center_var),
+        ("Ellipse axes", state.resolver_ellipse_axes_var),
+        ("Ellipse rotation", state.resolver_ellipse_rotation_var),
+        ("Channel non-orthogonality", state.resolver_nonorthogonality_var),
+        ("Ellipse fit", state.resolver_fit_status_var),
     ]
     for row, (label, var) in enumerate(resolver_stat_fields):
-        col = 0 if row < 3 else 2
-        grid_row = row if row < 3 else row - 3
+        col = 0 if row % 2 == 0 else 2
+        grid_row = row // 2
         ttk.Label(resolver_stats, text=label + ":").grid(row=grid_row, column=col, sticky="e", padx=10, pady=7)
         ttk.Entry(resolver_stats, textvariable=var, width=18, state="readonly").grid(
             row=grid_row, column=col + 1, sticky="w", padx=10, pady=7
         )
+
+    resolver_actions = ttk.Frame(resolver_inner)
+    resolver_actions.pack(fill="x", pady=(8, 0))
+    ttk.Button(resolver_actions, text="Mark mechanical revolution start",
+               command=handlers.get("resolver_mark_start", lambda: None)).pack(side="left", padx=4)
+    ttk.Button(resolver_actions, text="Mark mechanical revolution end",
+               command=handlers.get("resolver_mark_end", lambda: None)).pack(side="left", padx=4)
+    ttk.Button(resolver_actions, text="Fit ellipse",
+               command=handlers.get("resolver_fit_ellipse", lambda: None)).pack(side="left", padx=4)
+    ttk.Button(resolver_actions, text="Export raw points CSV",
+               command=handlers.get("export_resolver_csv", lambda: None)).pack(side="right", padx=4)
+    resolver_plot_frame = ttk.LabelFrame(resolver_inner, text="SIN against COS (raw CAN points)")
+    resolver_plot_frame.pack(fill="both", expand=True, pady=(10, 0))
 
     # === Control ===
     main_inner = ttk.Frame(main_frame)
@@ -432,15 +548,20 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     # Функция, которая перенастраивает ползунок и SPINBOX под режим
     def _configure_main_slider(mode: str):
         if mode == "speed":
+            try:
+                main_slider.state(["!disabled"])
+                main_entry.state(["!disabled"])
+            except Exception:
+                main_entry.configure(state="normal")
             slider_title.configure(text="Speed\nrpm")
-            main_slider.configure(from_=20000, to=0, variable=state.speed_var)
+            main_slider.configure(from_=1000, to=-1000, variable=state.speed_var)
             _make_focusable_scale(main_slider, state.speed_var, step=1.0)
 
             # настроим spinbox
             try:
-                main_entry.configure(textvariable=state.speed_var, from_=0, to=5000, increment=1.0)
+                main_entry.configure(textvariable=state.speed_var, from_=-1000, to=1000, increment=1.0)
             except Exception:
-                main_entry.config(textvariable=state.speed_var, from_=0, to=5000, increment=1.0)
+                main_entry.config(textvariable=state.speed_var, from_=-1000, to=1000, increment=1.0)
             _bind_spin_steps(main_entry, state.speed_var, step=1.0)
 
             def _on_release(_=None):
@@ -448,7 +569,12 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
             main_slider.unbind("<ButtonRelease-1>")
             main_slider.bind("<ButtonRelease-1>", _on_release)
 
-        else:  # torque или currents
+        elif mode == "torque":
+            try:
+                main_slider.state(["!disabled"])
+                main_entry.state(["!disabled"])
+            except Exception:
+                main_entry.configure(state="normal")
             slider_title.configure(text="Torque\nN·m")
             main_slider.configure(from_=500, to=0, variable=state.torque_var)
             _make_focusable_scale(main_slider, state.torque_var, step=1.0)
@@ -463,6 +589,14 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
                 _ui_log(state, "[UI] Ms изменён локально → нажмите «Отправить»")
             main_slider.unbind("<ButtonRelease-1>")
             main_slider.bind("<ButtonRelease-1>", _on_release)
+        else:  # currents are edited in the Id/Iq fields
+            slider_title.configure(text="Currents\nuse Id / Iq")
+            main_slider.unbind("<ButtonRelease-1>")
+            try:
+                main_slider.state(["disabled"])
+                main_entry.state(["disabled"])
+            except Exception:
+                main_entry.configure(state="disabled")
 
     # Радиокнопки режимов (сообщаем контроллеру и сразу переконфигурируем слайдер/спинбокс)
     def _on_mode_pick(val):
@@ -473,16 +607,16 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
                     variable=state.mode_var, command=lambda: _on_mode_pick("torque")).grid(row=0, column=0, padx=8, pady=8, sticky="w")
     ttk.Radiobutton(mode_frame, text="Currents (Id/Iq)", value="currents",
                     variable=state.mode_var, command=lambda: _on_mode_pick("currents")).grid(row=0, column=1, padx=8, pady=8, sticky="w")
-    ttk.Radiobutton(mode_frame, text="Frequency (ns)", value="speed",
+    ttk.Radiobutton(mode_frame, text="Speed (ns)", value="speed",
                     variable=state.mode_var, command=lambda: _on_mode_pick("speed")).grid(row=0, column=2, padx=8, pady=8, sticky="w")
     # Currents
     currents_frame = ttk.LabelFrame(main_inner, text="Currents")
     currents_frame.grid(row=1, column=1, padx=(0,10), pady=10, sticky="nsew")
     ttk.Label(currents_frame, text="Id [A]").grid(row=0, column=0, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Id_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Id_var, from_=-10.0, to=10.0, step=0.1, width=10)\
         .grid(row=0, column=1, sticky="w")
     ttk.Label(currents_frame, text="Iq [A]").grid(row=0, column=2, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Iq_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Iq_var, from_=-10.0, to=10.0, step=0.1, width=10)\
         .grid(row=0, column=3, sticky="w")
 
     # Limits
@@ -491,63 +625,37 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     _labent(limits_frame, 0, 0, "M_min [Н·м]", state.M_min_var)
     _labent(limits_frame, 0, 2, "M_max [Н·м]", state.M_max_var)
     _labent(limits_frame, 1, 0, "M_grad_max",  state.M_grad_max_var)
-    _labent(limits_frame, 1, 2, "n_max [rpm]", state.n_max_var)
+    _labent(limits_frame, 1, 2, "n_max [rpm] ≤ 1000", state.n_max_var)
+    ttk.Label(limits_frame, text="ARM required for non-zero commands; commissioning limit ±10 A").grid(
+        row=2, column=0, columnspan=4, sticky="w", padx=6, pady=4
+    )
+
+    torque_meter_frame = ttk.LabelFrame(main_inner, text="Torque meter (operator input)")
+    torque_meter_frame.grid(row=2, column=1, padx=(0, 10), pady=10, sticky="nsew")
+    ttk.Label(torque_meter_frame, text="Torque_meter [N·m]").grid(row=0, column=0, sticky="e", padx=6, pady=6)
+    ttk.Entry(torque_meter_frame, textvariable=state.torque_meter_var, width=12).grid(row=0, column=1, sticky="w", padx=6, pady=6)
+    ttk.Label(torque_meter_frame, text="Заполняется оператором; сохраняется в журнале и CSV.").grid(
+        row=1, column=0, columnspan=2, sticky="w", padx=6, pady=4
+    )
 
     # Параметры стенда (поля-отображение)
     params_frame = ttk.LabelFrame(main_inner, text="MCU_VCU_parameters")
-    params_frame.grid(row=2, column=1, columnspan=2, padx=(0,10), pady=0, sticky="nsew")
+    params_frame.grid(row=3, column=1, columnspan=2, padx=(0,10), pady=0, sticky="nsew")
     state.entry_vars = getattr(state, "entry_vars", {}) or {}
-    monitor_params = [
-        "Speed rotation",
-        "Torque (Ms)",
-        "DC voltage (Udc)",
-        "direct current (Idc)",
-        "Stator current d (Isd)",
-        "Stator current q (Isq)",
-        "IGBT temperature U",
-        "IGBT temperature V",
-        "IGBT temperature W",
-        "IGBT temperature Max",
-        "Stator temperature",
-        "Coolant temperature",
-        "M max",
-        "M min",
-        "M grad max",
-        "n max",
-    ]
-    split_at = (len(monitor_params) + 1) // 2
-    for i, param in enumerate(monitor_params):
-        block = 0 if i < split_at else 1
-        row = i if block == 0 else i - split_at
-        label_col = block * 2
-        value_col = label_col + 1
-        ttk.Label(params_frame, text=param + ":").grid(row=row, column=label_col, sticky="e", padx=5, pady=4)
-        var = state.entry_vars.get(param) or tk.StringVar(master=root)
-        state.entry_vars[param] = var
-        ttk.Entry(params_frame, textvariable=var, width=16).grid(row=row, column=value_col, padx=5, pady=4, sticky="ew")
-    params_frame.grid_columnconfigure(1, weight=1)
-    params_frame.grid_columnconfigure(3, weight=1)
+    _build_telemetry_fields(params_frame, state, CONTROL_MONITOR_FIELDS, columns=2)
 
     # CAN Tx/Rx (12 полей: id, data0..7, len, flags, ts)
     can_frame = ttk.LabelFrame(main_inner, text="Tx / Rx CAN")
 
     # MCU Current & Voltage
     voltage_frame = ttk.LabelFrame(main_inner, text="MCU Current & Voltage")
-    voltage_frame.grid(row=3, column=1, padx=(0,10), pady=10, sticky="nsew")
-    for i, param in enumerate(["Ud", "Uq", "Id", "Iq"]):
-        ttk.Label(voltage_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
-        var = state.entry_vars.get(param) or tk.StringVar(master=root)
-        state.entry_vars[param] = var
-        ttk.Entry(voltage_frame, textvariable=var, width=15).grid(row=i, column=1, padx=5, pady=3)
+    voltage_frame.grid(row=4, column=1, padx=(0,10), pady=10, sticky="nsew")
+    _build_telemetry_fields(voltage_frame, state, CURRENT_VOLTAGE_FIELDS)
 
     # MCU Flux Parameters
     flux_frame = ttk.LabelFrame(main_inner, text="MCU Flux Parameters")
-    flux_frame.grid(row=3, column=2, padx=(0,10), pady=10, sticky="nsew")
-    for i, param in enumerate(["Flux", "Theta", "Temperature"]):
-        ttk.Label(flux_frame, text=param + ":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
-        var = state.entry_vars.get(param) or tk.StringVar(master=root)
-        state.entry_vars[param] = var
-        ttk.Entry(flux_frame, textvariable=var, width=15).grid(row=i, column=1, padx=5, pady=3)
+    flux_frame.grid(row=4, column=2, padx=(0,10), pady=10, sticky="nsew")
+    _build_telemetry_fields(flux_frame, state, FLUX_FIELDS)
 
     # === AutoCal ===
     auto_inner = ttk.Frame(auto_frame)
@@ -561,7 +669,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     _labent(auto_limits, 0, 0, "M_min [Н·м]", state.M_min_var)
     _labent(auto_limits, 0, 2, "M_max [Н·м]", state.M_max_var)
     _labent(auto_limits, 1, 0, "M_grad_max",  state.M_grad_max_var)
-    _labent(auto_limits, 1, 2, "n_max [rpm]", state.n_max_var)
+    _labent(auto_limits, 1, 2, "n_max [rpm] ≤ 1000", state.n_max_var)
 
     auto_ctl = ttk.LabelFrame(auto_left, text="Auto calibration")
     auto_ctl.pack(fill="x", padx=10, pady=(0, 10))
@@ -735,38 +843,83 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     trends_container = ttk.Frame(trends_frame)
     trends_container.pack(fill="both", expand=True, padx=10, pady=10)
     maps_container = ttk.Frame(maps_frame)
+    maps_container.pack(fill="both", expand=True, padx=10, pady=10)
     fig_trends = canvas_trends = None
-    ax1 = ax2 = ax3 = ax4 = ax5 = None
-    l_ns = l_ms = l_idc = l_isd = l_id = l_iq = l_ud = l_uq = l_theta = None
+    ax1 = ax2 = ax3 = ax4 = ax5 = ax6t = None
+    l_ns = l_ms = l_idc = l_isd = l_isq = l_id = l_iq = l_ud = l_uq = None
+    l_theta = l_theta_corr = l_flux_error = None
 
     fig_maps = canvas_maps = None
     ax5a = ax5b = ax6 = ax6_right = None
     sc_ld = sc_lq = ln_torque = ln_pmech = ln_pelec = None
+    fig_resolver = canvas_resolver = None
+    ax_resolver = line_resolver = None
 
     def _ensure_trends():
         nonlocal fig_trends, canvas_trends
-        nonlocal ax1, ax2, ax3, ax4, ax5
-        nonlocal l_ns, l_ms, l_idc, l_isd, l_id, l_iq, l_ud, l_uq, l_theta
+        nonlocal ax1, ax2, ax3, ax4, ax5, ax6t
+        nonlocal l_ns, l_ms, l_idc, l_isd, l_isq, l_id, l_iq, l_ud, l_uq
+        nonlocal l_theta, l_theta_corr, l_flux_error
         if fig_trends is not None:
             return
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
         from matplotlib.figure import Figure
 
-        fig_trends = Figure(figsize=(8, 5), dpi=100)
-        ax1 = fig_trends.add_subplot(111)
-        ax1.set_title("Theta vs TimeStamp")
-        ax1.set_xlabel("TimeStamp")
-        ax1.set_ylabel("Theta")
-        ax1.grid(True)
-        l_theta, = ax1.plot([], [], label="Theta")
+        fig_trends = Figure(figsize=(11, 7), dpi=100, constrained_layout=True)
+        ax1 = fig_trends.add_subplot(321)
+        ax2 = fig_trends.add_subplot(322)
+        ax3 = fig_trends.add_subplot(323)
+        ax4 = fig_trends.add_subplot(324)
+        ax5 = fig_trends.add_subplot(325)
+        ax6t = fig_trends.add_subplot(326)
+        for ax, title, ylabel in (
+            (ax1, "Motor speed", "rpm"),
+            (ax2, "Actual torque", "N·m"),
+            (ax3, "Measured MCU currents", "A"),
+            (ax4, "FOC currents", "A"),
+            (ax5, "FOC voltages", "V"),
+            (ax6t, "Electrical angles / flux error", "rad"),
+        ):
+            ax.set_title(title)
+            ax.set_xlabel("seconds from now")
+            ax.set_ylabel(ylabel)
+            ax.grid(True)
+
+        l_ns, = ax1.plot([], [], label="speed")
+        l_ms, = ax2.plot([], [], label="torque")
+        l_idc, = ax3.plot([], [], label="MCU_IsCurr")
+        l_isd, = ax3.plot([], [], label="MCU_Isd")
+        l_isq, = ax3.plot([], [], label="MCU_Isq")
+        l_id, = ax4.plot([], [], label="Id")
+        l_iq, = ax4.plot([], [], label="Iq")
+        l_ud, = ax5.plot([], [], label="Ud")
+        l_uq, = ax5.plot([], [], label="Uq")
+        l_theta, = ax6t.plot([], [], label="Theta")
+        l_theta_corr, = ax6t.plot([], [], label="ThetaCorr")
+        l_flux_error, = ax6t.plot([], [], label="fluxError")
+        for ax in (ax3, ax4, ax5, ax6t):
+            ax.legend(loc="best")
 
         canvas_trends = FigureCanvasTkAgg(fig_trends, master=trends_container)
         canvas_trends.get_tk_widget().pack(fill="both", expand=True)
         state.trends = {
             "figure": fig_trends,
             "canvas": canvas_trends,
-            "axes": [ax1],
-            "lines": [l_theta],
+            "axes": [ax1, ax2, ax3, ax4, ax5, ax6t],
+            "series": [
+                (l_ns, state.trend_ns),
+                (l_ms, state.trend_Ms),
+                (l_idc, state.trend_Idc),
+                (l_isd, state.trend_Isd),
+                (l_isq, state.trend_Isq),
+                (l_id, state.trend_Id),
+                (l_iq, state.trend_Iq),
+                (l_ud, state.trend_Ud),
+                (l_uq, state.trend_Uq),
+                (l_theta, state.trend_theta),
+                (l_theta_corr, state.trend_theta_corr),
+                (l_flux_error, state.trend_flux_error),
+            ],
             "ax1": ax1, "l_theta": l_theta,
         }
 
@@ -805,10 +958,31 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
             "ln_torque": ln_torque, "ln_pmech": ln_pmech, "ln_pelec": ln_pelec,
         }
 
+    def _ensure_resolver_plot():
+        nonlocal fig_resolver, canvas_resolver, ax_resolver, line_resolver
+        if fig_resolver is not None:
+            return
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.figure import Figure
+        fig_resolver = Figure(figsize=(7, 4), dpi=100, constrained_layout=True)
+        ax_resolver = fig_resolver.add_subplot(111)
+        ax_resolver.set_xlabel("SIN [ADC counts]")
+        ax_resolver.set_ylabel("COS [ADC counts]")
+        ax_resolver.set_title("Resolver trajectory / ellipse")
+        ax_resolver.grid(True)
+        line_resolver, = ax_resolver.plot([], [], ".", markersize=2)
+        canvas_resolver = FigureCanvasTkAgg(fig_resolver, master=resolver_plot_frame)
+        canvas_resolver.get_tk_widget().pack(fill="both", expand=True)
+        state.resolver_plot = {"figure": fig_resolver, "canvas": canvas_resolver, "axes": ax_resolver, "line": line_resolver}
+
     def _on_tab_changed(_event=None):
         selected = notebook.select()
         if selected == str(trends_frame):
             _ensure_trends()
+        elif selected == str(maps_frame):
+            _ensure_maps()
+        elif selected == str(resolver_frame):
+            _ensure_resolver_plot()
 
     notebook.bind("<<NotebookTabChanged>>", _on_tab_changed, add="+")
 
@@ -818,6 +992,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     # Выдаём ссылки на графики/оси в state — чтобы контроллер мог обновлять
     state.trends = {}
     state.maps = {}
+    state.resolver_plot = {}
 
     view = ViewRefs(
         root=root, style=style,

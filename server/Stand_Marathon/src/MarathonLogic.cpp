@@ -1,16 +1,11 @@
 //Stand_Marathon/src/MarathonLogic.cpp
 #include "MarathonLogic.h"
+#include "DbcSignalCache.h"
 #include <iostream>
 #include <cstring>
 #include <iomanip>
 #include <cstdlib>
 #include <cmath>
-
-namespace {
-
-constexpr bool kLogDbcSelectedSignals = false;
-
-}
 
 void printCANMessage(const CANMessage& msg, std::ostream& os, bool showDec) {
     os << "[CAN RX] ID=0x" << std::uppercase << std::hex << msg.id
@@ -67,8 +62,11 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         printCANMessage(msg, std::cout, 0);
     }
 
-    // DBC RX auto parsing is intentionally disabled here.
-    // The runtime receive path must use the static switch below.
+    // Keep the typed fields below as the authoritative application model, but
+    // also decode the currently selected DBC signals for the Signals UI.  The
+    // catalog/selection endpoint used to work while this value store remained
+    // empty, so every selected RX signal appeared without live data.
+    DbcSignalCache::instance().decodeSelectedRx(msg.id, msg.data, msg.length, data);
 
     switch (msg.id) {
         case 0x7a: { // MCU_VCU_1 (BO_ 122)
@@ -81,6 +79,9 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             data.Udc = udcCurr;
             data.Idc = isCurr;
             data.ns = actualSpeed;
+            data.MCU_MessageCounter7A = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 51, 4));
+            data.MCU_ActualTorqueValid = UnpackSignalFromBytes(msg.data, 52, 1) != 0;
+            data.MCU_ActualSpeedValid = UnpackSignalFromBytes(msg.data, 53, 1) != 0;
 
             std::cout << "[RX] Ms=" << data.Ms << " Ns=" << data.ns
                       << " Udc=" << data.Udc << " Idc=" << data.Idc << std::endl;
@@ -88,10 +89,10 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         }
 
         case 0x7b: { // MCU_Temperature1 (BO_ 123)
-            data.MCU_IGBTTempU   = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 7, 8)) - 50;
-            data.MCU_IGBTTempV   = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 15, 8)) - 50;
-            data.MCU_IGBTTempW   = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 23, 8)) - 50;
-            data.MCU_IGBTTempMax = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
+            data.MCU_IGBTTempU   = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 7, 8)) - 50;
+            data.MCU_IGBTTempV   = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 15, 8)) - 50;
+            data.MCU_IGBTTempW   = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 23, 8)) - 50;
+            data.MCU_IGBTTempMax = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
 
             std::cout << "[RX] IGBT Temps: U=" << (int)data.MCU_IGBTTempU
                       << " V=" << (int)data.MCU_IGBTTempV
@@ -100,8 +101,10 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         }
 
         case 0x7c: { // MCU_Temperature2 (BO_ 124)
-            data.MCU_TempCurrCool = static_cast<int8_t>(UnpackSignalFromBytes(msg.data, 7, 8)) - 50;
-            data.MCU_TempCurrStr  = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
+            data.MCU_TempCurrCool = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 7, 8)) - 50;
+            data.MCU_TempCurrStr1 = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 15, 8)) - 50;
+            data.MCU_TempCurrStr2 = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 23, 8)) - 50;
+            data.MCU_TempCurrStr  = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 31, 8)) - 50;
 
             std::cout << "[RX] Stator Temp=" << (int)data.MCU_TempCurrStr
                       << " Coolant=" << (int)data.MCU_TempCurrCool << std::endl;
@@ -188,6 +191,8 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             data.ResolverAmplitude = std::sqrt(
                 data.ResolverSine * data.ResolverSine +
                 data.ResolverCosine * data.ResolverCosine);
+            data.ResolverCanTimestampUs = msg.timestamp;
+            ++data.ResolverSampleCount;
             break;
         }
 
@@ -210,6 +215,27 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
             data.ResolverCalibrationStatus = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 55, 8));
             data.ResolverCalibrationAckSequence = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 63, 8));
             ++data.ResolverCalibrationStatusCount;
+            break;
+        }
+
+        case 0x83: { // MCU_CommissioningSafetyStatus (BO_ 131)
+            if (msg.length < 8) break;
+            data.IdCommandEcho =
+                static_cast<float>(UnpackSignalFromBytes(msg.data, 7, 16)) * 0.1f - 3200.0f;
+            data.IqCommandEcho =
+                static_cast<float>(UnpackSignalFromBytes(msg.data, 23, 16)) * 0.1f - 3200.0f;
+            data.CurrentCommandAgeMs =
+                static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16));
+            data.McuSafetyFlags =
+                static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 55, 8));
+            data.McuFaultReason =
+                static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 63, 8));
+            data.PwmEnabled = (data.McuSafetyFlags & 0x01U) != 0;
+            data.PiSaturation = (data.McuSafetyFlags & 0x02U) != 0;
+            data.CurrentCommandEnabled = (data.McuSafetyFlags & 0x04U) != 0;
+            data.CurrentCommandWatchdogExpired = (data.McuSafetyFlags & 0x08U) != 0;
+            data.McuGlobalFault = (data.McuSafetyFlags & 0x10U) != 0;
+            ++data.McuSafetyStatusCount;
             break;
         }
 

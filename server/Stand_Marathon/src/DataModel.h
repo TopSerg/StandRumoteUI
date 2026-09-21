@@ -22,9 +22,10 @@ struct DataModel {
     uint32_t acode = 0x00000032;
 
     // === Управление ===
-    bool Kl_15 = true;            // Зажигание
+    bool Kl_15 = false;           // Зажигание (safe default)
     bool En_rem = true;           // Удаленное управление
-    bool En_Is = true;            // Управление током
+    bool En_Is = false;           // Управление током (only after explicit ARM)
+    bool ControlArmed = false;     // Server-side commissioning interlock
     uint8_t Dampf_U = 0;           // Демпф. U
     bool Brake_active = false;     // Тормоз
     bool TCS_active = false;       // TCS
@@ -53,6 +54,9 @@ struct DataModel {
     float Isq = 0.0f;              // q-компонента
     float Udc = 0.0f;              // Напряжение DC
     float Pe_dc = 0.0f;            // Мощность DC
+    uint8_t MCU_MessageCounter7A = 0;
+    bool MCU_ActualTorqueValid = false;
+    bool MCU_ActualSpeedValid = false;
 
     // === Температуры ===
     float MCU_IGBTTempU = 0.0f;
@@ -100,6 +104,8 @@ struct DataModel {
     float ResolverAmplitude = 0.0f;
     float ResolverTheta = 0.0f;
     float ResolverThetaCorr = 0.0f;
+    uint32_t ResolverCanTimestampUs = 0;
+    uint64_t ResolverSampleCount = 0;
 
     // === Resolver zero-angle calibration status (CAN 0x082, 50 Hz) ===
     float FluxPositionError = 0.0f;          // signed, wrapped to [-pi, pi], rad
@@ -119,6 +125,19 @@ struct DataModel {
     float Uq = 0;
     float Id = 0;
     float Iq = 0;
+
+    // === Commissioning safety telemetry (CAN 0x083) ===
+    float IdCommandEcho = 0.0f;
+    float IqCommandEcho = 0.0f;
+    uint16_t CurrentCommandAgeMs = 0xFFFFU;
+    uint8_t McuSafetyFlags = 0;
+    uint8_t McuFaultReason = 0;
+    uint64_t McuSafetyStatusCount = 0;
+    bool PwmEnabled = false;
+    bool PiSaturation = false;
+    bool CurrentCommandEnabled = false;
+    bool CurrentCommandWatchdogExpired = true;
+    bool McuGlobalFault = false;
 
     // --- MCU_Status (BO_ 125) ---
     float   MCU_OfsAl        = 0.0f;  // [deg] scale 0.0878906

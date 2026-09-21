@@ -2,6 +2,7 @@
 #include "StateMachine.h"
 #include "CommandSender.h"
 #include "DbcSignalCache.h"
+#include "SignalLogger.h"
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
@@ -13,6 +14,9 @@ StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& c
 
 void StateMachine::setState(State newState) {
     const State previousState = currentState.load();
+    if (newState != State::Read2) {
+        disarmControl();
+    }
     if ((previousState == State::ResolverRxInit || previousState == State::ResolverRx) &&
         newState != State::ResolverRxInit && newState != State::ResolverRx &&
         resolverCalibration_.active()) {
@@ -20,7 +24,7 @@ void StateMachine::setState(State newState) {
     }
     if (newState == State::ResolverRxInit || newState == State::ResolverRx) {
         canInterface.setTransmitEnabled(false);
-    } else if (newState == State::Read2) {
+    } else if (newState == State::Read2 || newState == State::SafeStop) {
         canInterface.setTransmitEnabled(true);
     } else {
         canInterface.setTransmitEnabled(false);
@@ -40,11 +44,56 @@ const char* StateMachine::stateName() const {
         case State::Read2: return "normal";
         case State::ResolverRxInit: return "resolver_rx_init";
         case State::ResolverRx: return "resolver_rx";
+        case State::SafeStop: return "safe_stop";
         case State::Stop: return "stop";
         case State::Save_Cfg: return "save_cfg";
         case State::Read_Cfg: return "read_cfg";
     }
     return "unknown";
+}
+
+bool StateMachine::armControl(std::string& reason) {
+    if (currentState.load() != State::Read2) {
+        reason = "CAN must be running in normal mode";
+        return false;
+    }
+    if (data.McuSafetyStatusCount == 0) {
+        reason = "No MCU safety status frame 0x083; flash matching controller firmware";
+        return false;
+    }
+    if (data.PwmEnabled || data.McuGlobalFault) {
+        reason = data.PwmEnabled ? "PWM is already enabled" : "MCU reports a fault";
+        return false;
+    }
+    data.Isd = 0.0f;
+    data.Isq = 0.0f;
+    data.M_desired = 0.0f;
+    data.En_Is = false;
+    data.ControlArmed = true;
+    safeStopConfirmed_ = false;
+    safeStopStatus_ = "armed";
+    reason = "armed";
+    return true;
+}
+
+void StateMachine::disarmControl() {
+    data.ControlArmed = false;
+    data.En_Is = false;
+    data.Isd = 0.0f;
+    data.Isq = 0.0f;
+    data.M_desired = 0.0f;
+}
+
+void StateMachine::requestSafeStop() {
+    disarmControl();
+    data.Kl_15 = false;
+    safeStopConfirmed_ = false;
+    safeStopStatus_ = "sending_zero_commands";
+    safeStopStartStatusCount_ = data.McuSafetyStatusCount;
+    safeStopFramesSent_ = 0;
+    t_safe_stop_ = clock::now();
+    t_safe_stop_tx_ = t_safe_stop_ - SAFE_STOP_PERIOD;
+    setState(State::SafeStop);
 }
 
 // ТОЛЬКО тут решаем, когда слать сообщения
@@ -105,6 +154,7 @@ void StateMachine::update() {
         case State::Read2:    handleRead2(); break;
         case State::ResolverRxInit: handleResolverRxInit(); break;
         case State::ResolverRx: handleResolverRx(); break;
+        case State::SafeStop: handleSafeStop(); break;
         case State::Stop:     handleStop(); break;
         case State::Save_Cfg: handleSaveCfg(); break;
         case State::Read_Cfg: handleReadCfg(); break;
@@ -125,6 +175,43 @@ void StateMachine::update() {
         isOverSpeed = false;
     }
     
+}
+
+void StateMachine::handleSafeStop() {
+    const auto now = clock::now();
+    if (now - t_safe_stop_tx_ >= SAFE_STOP_PERIOD) {
+        data.ControlArmed = false;
+        data.En_Is = false;
+        data.Isd = 0.0f;
+        data.Isq = 0.0f;
+        data.M_desired = 0.0f;
+        data.Kl_15 = false;
+        CommandSender::sendControlCommand(canInterface, data);
+        CommandSender::sendTorqueCommand(canInterface, data);
+        ++safeStopFramesSent_;
+        t_safe_stop_tx_ = now;
+    }
+
+    handleRead2();
+    const bool freshStatus = data.McuSafetyStatusCount > safeStopStartStatusCount_;
+    const bool zeroEcho = std::fabs(data.IdCommandEcho) <= 0.05f &&
+                          std::fabs(data.IqCommandEcho) <= 0.05f;
+    const bool acknowledged = freshStatus && safeStopFramesSent_ >= 3U && zeroEcho &&
+                              !data.CurrentCommandEnabled && !data.PwmEnabled;
+    if (acknowledged) {
+        safeStopConfirmed_ = true;
+        safeStopStatus_ = "confirmed";
+        canInterface.setTransmitEnabled(false);
+        canInterface.stop();
+        currentState.store(State::Idle);
+        return;
+    }
+
+    if (now - t_safe_stop_ > SAFE_STOP_WARN_TIMEOUT) {
+        // Deliberately keep CAN open and continue sending the safe command.
+        // Firmware watchdog remains the final independent layer.
+        safeStopStatus_ = "waiting_for_mcu_ack";
+    }
 }
 
 void StateMachine::handleResolverRxInit() {
@@ -198,7 +285,10 @@ bool StateMachine::sendResolverCalibrationCommand(bool enable)
     data.ResolverCalibrationEnableCommand = enable ? 1 : 0;
     data.ResolverCalibrationCommandSequence = sequence;
     const bool sent = canInterface.sendResolverCalibration(kCommandId, payload, 8);
-    if (sent) t_cal_tx_ = clock::now();
+    if (sent) {
+        SignalLogger::instance().captureSelectedPayload("TX", kCommandId, payload, 8);
+        t_cal_tx_ = clock::now();
+    }
     return sent;
 }
 

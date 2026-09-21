@@ -51,13 +51,7 @@ SignalLogger& SignalLogger::instance()
     return logger;
 }
 
-SignalLogger::SignalLogger()
-{
-    csv_.open("dbc_signals.csv", std::ios::app);
-    if (csv_ && csv_.tellp() == 0) {
-        csv_ << "timestamp;direction;message_id;message_name;signal_name;raw;physical;selected\n";
-    }
-}
+SignalLogger::SignalLogger() = default;
 
 void SignalLogger::log(
     const char* direction,
@@ -98,6 +92,12 @@ void SignalLogger::log(
         selectedSamples_.erase(it);
     }
 
+    if (!csv_.is_open()) {
+        csv_.open("dbc_signals.csv", std::ios::app);
+        if (csv_ && csv_.tellp() == 0) {
+            csv_ << "timestamp;direction;message_id;message_name;signal_name;raw;physical;selected\n";
+        }
+    }
     if (!csv_) {
         return;
     }
@@ -111,6 +111,62 @@ void SignalLogger::log(
          << (selected ? 1 : 0)
          << '\n';
     csv_.flush();
+}
+
+void SignalLogger::captureSelectedPayload(
+    const char* direction,
+    uint32_t messageId,
+    const uint8_t* payload,
+    uint8_t payloadLength)
+{
+    if (!direction || !payload) {
+        return;
+    }
+
+    DbcSignalCache& cache = DbcSignalCache::instance();
+    const bool tx = std::string(direction) == "TX";
+    std::vector<LoggedSignalSample> decoded;
+    for (const DbcSignalDef& def : cache.messageSignals(messageId)) {
+        const bool selected = tx
+            ? cache.isTxSelected(def.signalName)
+            : cache.isRxSelected(def.signalName);
+        if (!selected || def.length == 0 || def.length > 32) {
+            continue;
+        }
+
+        const uint8_t currentStartBit = static_cast<uint8_t>((def.length - 1) % 8);
+        const uint8_t startBitInByte = static_cast<uint8_t>(def.startBit % 8);
+        const uint8_t extraByte = startBitInByte < currentStartBit ? 1 : 0;
+        const uint8_t lastByte = static_cast<uint8_t>(
+            def.startBit / 8 + (def.length - 1) / 8 + extraByte);
+        if (lastByte >= payloadLength) {
+            continue;
+        }
+
+        const uint32_t raw = unpackDbcSignal(payload, def.startBit, def.length);
+        decoded.push_back(LoggedSignalSample{
+            direction,
+            def.messageId,
+            def.messageName,
+            def.signalName,
+            raw,
+            static_cast<double>(raw) * def.factor + def.offset,
+        });
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (LoggedSignalSample& sample : decoded) {
+        auto current = std::find_if(selectedSamples_.begin(), selectedSamples_.end(),
+            [&](const LoggedSignalSample& value) {
+                return value.direction == sample.direction &&
+                    value.signalName == sample.signalName;
+            });
+        if (current == selectedSamples_.end()) {
+            selectedSamples_.push_back(std::move(sample));
+        } else {
+            *current = std::move(sample);
+        }
+    }
 }
 
 std::vector<LoggedSignalSample> SignalLogger::selectedSamples() const
