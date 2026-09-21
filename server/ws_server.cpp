@@ -181,6 +181,16 @@ std::string serializeData() {
     j["ResolverAmplitude"] = model.ResolverAmplitude;
     j["ResolverTheta"] = model.ResolverTheta;
     j["ResolverThetaCorr"] = model.ResolverThetaCorr;
+    j["FluxPositionError"] = model.FluxPositionError;
+    j["ResolverThetaCorrection"] = model.ResolverThetaCorrection;
+    j["ResolverElectricalSpeed"] = model.ResolverElectricalSpeed;
+    j["ResolverCalibrationStatus"] = model.ResolverCalibrationStatus;
+    j["ResolverCalibrationAckSequence"] = model.ResolverCalibrationAckSequence;
+    j["ResolverCalibrationCommand"] = sm.resolverCalibrationCommand();
+    j["ResolverCalibrationError"] = sm.resolverCalibrationError();
+    j["ResolverCalibrationActive"] = sm.resolverCalibrationActive();
+    j["ResolverCalibrationConverged"] = sm.resolverCalibrationConverged();
+    j["ResolverCalibrationState"] = sm.resolverCalibrationStatus();
     j["can_mode"] = sm.stateName();
     j["can_rx_only"] = sm.isRxOnly();
     j["json_period_ms"] = g_json_period_ms.load();
@@ -270,6 +280,23 @@ void handleCommand(const json& j, std::vector<json>& responses) {
         sm.setState(State::Init);
     } else if (cmd == "StartResolverCalibration" || cmd == "ResolverRx") {
         sm.setState(State::ResolverRxInit);
+    } else if (cmd == "StartResolverAutoCalibration") {
+        const float gain = j.value("gain", 0.2f);
+        const float tolerance = j.value("tolerance", 0.01f);
+        const float maxStep = j.value("max_step", 0.02f);
+        std::string reason;
+        const bool ok = sm.startResolverAutoCalibration(gain, tolerance, maxStep, reason);
+        responses.push_back({
+            {"type", ok ? "resolver_calibration_started" : "command_rejected"},
+            {"cmd", cmd},
+            {"reason", reason}
+        });
+    } else if (cmd == "StopResolverAutoCalibration") {
+        sm.stopResolverAutoCalibration();
+        responses.push_back({
+            {"type", "resolver_calibration_stopped"},
+            {"cmd", cmd}
+        });
     } else if (cmd == "Stop") {
         sm.setState(State::Stop);
     } else if (cmd == "Read2") {

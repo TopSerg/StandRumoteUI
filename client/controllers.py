@@ -132,6 +132,8 @@ class Controllers:
             "connect_ws": self.connect_ws_from_ui,
             "apply_json_period": self.apply_json_period,
             "start_resolver_calibration": self.start_resolver_calibration,
+            "start_resolver_auto_calibration": self.start_resolver_auto_calibration,
+            "stop_resolver_auto_calibration": self.stop_resolver_auto_calibration,
             "reset_resolver_capture": self.reset_resolver_capture,
 
             # синонимы на всякий случай
@@ -205,6 +207,45 @@ class Controllers:
         ):
             getattr(self.state, name).set("—")
         self.ui_log("[Resolver] capture statistics reset; rotate the shaft through a full revolution")
+
+    def start_resolver_auto_calibration(self) -> None:
+        """Enable the guarded theta-correction loop while normal CAN TX stays blocked."""
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        try:
+            gain = float(self.state.resolver_auto_gain_var.get())
+            tolerance = float(self.state.resolver_auto_tolerance_var.get())
+            max_step = float(self.state.resolver_auto_max_step_var.get())
+        except Exception:
+            self.ui_log("[Resolver] invalid gain/tolerance/max-step", "ERR")
+            return
+        if not (0.01 <= gain <= 1.0):
+            self.ui_log("[Resolver] gain must be in [0.01, 1.0]", "ERR")
+            return
+        if not (0.0005 <= tolerance <= 0.25):
+            self.ui_log("[Resolver] tolerance must be in [0.0005, 0.25] rad", "ERR")
+            return
+        if not (0.0005 <= max_step <= 0.2):
+            self.ui_log("[Resolver] max step must be in [0.0005, 0.2] rad", "ERR")
+            return
+
+        self.client.send_json_threadsafe({
+            "cmd": "StartResolverAutoCalibration",
+            "gain": gain,
+            "tolerance": tolerance,
+            "max_step": max_step,
+        })
+        self.state.resolver_auto_state_var.set("starting")
+        self.ui_log("[Resolver] auto thetaCorr requested; only CAN 0x301 is allowed to transmit")
+
+    def stop_resolver_auto_calibration(self) -> None:
+        if not self.client:
+            self.ui_log("[WS] клиент не привязан", "ERR")
+            return
+        self.client.send_json_threadsafe({"cmd": "StopResolverAutoCalibration"})
+        self.state.resolver_auto_state_var.set("stopping")
+        self.ui_log("[Resolver] auto thetaCorr stop requested")
 
     def _apply_json_period_when_connected(self, attempts_left: int = 10) -> None:
         if not self.client:

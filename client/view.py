@@ -191,6 +191,13 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     state.resolver_sine_amplitude_var = sv(getattr(state, "resolver_sine_amplitude_var", None), "—")
     state.resolver_cosine_amplitude_var = sv(getattr(state, "resolver_cosine_amplitude_var", None), "—")
     state.resolver_gain_ratio_var = sv(getattr(state, "resolver_gain_ratio_var", None), "—")
+    state.resolver_flux_error_var = sv(getattr(state, "resolver_flux_error_var", None), "—")
+    state.resolver_theta_correction_var = sv(getattr(state, "resolver_theta_correction_var", None), "—")
+    state.resolver_electrical_speed_var = sv(getattr(state, "resolver_electrical_speed_var", None), "—")
+    state.resolver_auto_state_var = sv(getattr(state, "resolver_auto_state_var", None), "idle")
+    state.resolver_auto_gain_var = sv(getattr(state, "resolver_auto_gain_var", None), "0.20")
+    state.resolver_auto_tolerance_var = sv(getattr(state, "resolver_auto_tolerance_var", None), "0.010")
+    state.resolver_auto_max_step_var = sv(getattr(state, "resolver_auto_max_step_var", None), "0.020")
 
     # массивы строк для CAN (12 полей: id, data0..7, len, flags, ts)
     if not getattr(state, "can_rx_data", None) or len(state.can_rx_data) != 12:
@@ -310,6 +317,53 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         wraplength=900,
         justify="left",
     ).grid(row=len(resolver_fields), column=0, columnspan=2, sticky="w", padx=10, pady=(8, 12))
+
+    resolver_auto = ttk.LabelFrame(resolver_inner, text="Automatic thetaCorr calibration")
+    resolver_auto.pack(fill="x", pady=(12, 0))
+    ttk.Label(
+        resolver_auto,
+        text=(
+            "Сначала включите инвертор с Id=Iq=0 в обычном режиме, затем Start RX-only. "
+            "В автокалибровке обычные команды 0x046/0x047/0x300 заблокированы; "
+            "разрешён только защищённый кадр thetaCorr 0x301."
+        ),
+        foreground="#8a5a00",
+        wraplength=940,
+        justify="left",
+    ).grid(row=0, column=0, columnspan=8, sticky="w", padx=10, pady=(8, 6))
+
+    auto_live_fields = [
+        ("fluxError [rad]", state.resolver_flux_error_var),
+        ("thetaCorr parameter [rad]", state.resolver_theta_correction_var),
+        ("electrical speed [rad/s]", state.resolver_electrical_speed_var),
+        ("state", state.resolver_auto_state_var),
+    ]
+    for col, (label, var) in enumerate(auto_live_fields):
+        ttk.Label(resolver_auto, text=label + ":").grid(row=1, column=col * 2, sticky="e", padx=(10, 4), pady=6)
+        ttk.Entry(resolver_auto, textvariable=var, width=19, state="readonly").grid(
+            row=1, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=6
+        )
+
+    auto_settings = [
+        ("gain", state.resolver_auto_gain_var),
+        ("tolerance [rad]", state.resolver_auto_tolerance_var),
+        ("max step [rad]", state.resolver_auto_max_step_var),
+    ]
+    for col, (label, var) in enumerate(auto_settings):
+        ttk.Label(resolver_auto, text=label + ":").grid(row=2, column=col * 2, sticky="e", padx=(10, 4), pady=(6, 10))
+        ttk.Entry(resolver_auto, textvariable=var, width=12).grid(
+            row=2, column=col * 2 + 1, sticky="w", padx=(0, 8), pady=(6, 10)
+        )
+    ttk.Button(
+        resolver_auto,
+        text="▶ Start auto thetaCorr",
+        command=handlers.get("start_resolver_auto_calibration", lambda: None),
+    ).grid(row=2, column=6, padx=6, pady=(6, 10), sticky="ew")
+    ttk.Button(
+        resolver_auto,
+        text="■ Stop auto",
+        command=handlers.get("stop_resolver_auto_calibration", lambda: None),
+    ).grid(row=2, column=7, padx=(0, 10), pady=(6, 10), sticky="ew")
 
     resolver_stats = ttk.LabelFrame(resolver_inner, text="Full-turn capture")
     resolver_stats.pack(fill="x", pady=(12, 0))

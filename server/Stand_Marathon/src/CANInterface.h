@@ -26,6 +26,9 @@ public:
 
     //uint8_t send(dbc_can_tx_message_type* message);
     bool send(uint32_t id, const uint8_t* data, uint8_t length);
+    // The only frame allowed while application TX is blocked. The method
+    // rejects every ID except the dedicated resolver-calibration command.
+    bool sendResolverCalibration(uint32_t id, const uint8_t* data, uint8_t length);
     bool receive(CANMessage& msg);
     void setTransmitEnabled(bool enabled);
     bool isTransmitEnabled() const;
@@ -41,6 +44,8 @@ private:
     TPCANHandle handle;
     bool initialized;
     std::atomic<bool> transmitEnabled{false};
+
+    bool writeFrame(uint32_t id, const uint8_t* data, uint8_t length, const char* label);
 
     std::string getErrorText(TPCANStatus error);
 };

@@ -499,6 +499,19 @@ BO_ 129 MCU_ResolverCalibration: 8 MCU
  SG_ ResolverTheta : 39|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
  SG_ ResolverThetaCorr : 55|16@0+ (0.0001,0) [0|6.5535] "rad" VCU
 
+BO_ 130 MCU_ResolverCalibrationStatus: 8 MCU
+ SG_ FluxPositionError : 7|16@0+ (0.0001,0) [0|6.5535] "rad_wrapped" VCU
+ SG_ ResolverThetaCorrection : 23|16@0+ (0.0001,0) [0|6.5535] "rad_wrapped" VCU
+ SG_ ResolverElectricalSpeed : 39|16@0+ (0.1,-3276.8) [-3276.8|3276.7] "rad/s" VCU
+ SG_ ResolverCalibrationStatus : 55|8@0+ (1,0) [0|255] "" VCU
+ SG_ ResolverCalibrationAckSequence : 63|8@0+ (1,0) [0|255] "" VCU
+
+BO_ 769 VCU_ResolverCalibrationCommand: 8 VCU
+ SG_ ResolverThetaCorrectionCommand : 7|16@0+ (0.0001,-3.2768) [-3.2768|3.2767] "rad" MCU
+ SG_ ResolverCalibrationEnableCommand : 23|8@0+ (1,0) [0|1] "" MCU
+ SG_ ResolverCalibrationCommandSequence : 31|8@0+ (1,0) [0|255] "" MCU
+ SG_ ResolverCalibrationMagic : 47|16@0+ (1,0) [0|65535] "" MCU
+
 BO_ 709 MCU_DeratingStatus: 8 MCU
  SG_ MCU_bDernOvrIdc : 6|1@0+ (1,0) [0|1] ""  VCU
  SG_ MCU_bDernOvrUdc : 5|1@0+ (1,0) [0|1] ""  VCU
@@ -1803,4 +1816,3 @@ VAL_ 709 MCU_bDernTempCool 1 "Derating" 0 "Normal " ;
 VAL_ 709 MCU_bDernN 1 "Derating" 0 "Normal " ;
 VAL_ 709 MCU_stDischg 3 " Failed" 2 " Finished" 1 " Active" 0 " Standby" ;
 VAL_ 710 MCU_FailCode1 4 " Fault Level4" 3 " Fault Level3" 2 " Fault Level2" 1 " Fault Level1" 0 "No Fault" ;
-

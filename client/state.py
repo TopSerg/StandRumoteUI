@@ -22,7 +22,9 @@ TELEM_COLUMNS = [
     "MCU_OfsAl", "MCU_Isd", "MCU_Isq", "MCU_bDmpCActv",
     "MCU_stGateDrv", "MCU_DmpCTrqCurr", "MCU_VCUWorkMode",
     "ResolverSine", "ResolverCosine", "ResolverAmplitude",
-    "ResolverTheta", "ResolverThetaCorr", "CanMode",
+    "ResolverTheta", "ResolverThetaCorr", "FluxPositionError",
+    "ResolverThetaCorrection", "ResolverElectricalSpeed",
+    "ResolverCalibrationState", "CanMode",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
@@ -46,6 +48,9 @@ FIELD_ALIASES = {
     "ResolverAmplitude": ["ResolverAmplitude"],
     "ResolverTheta": ["ResolverTheta"],
     "ResolverThetaCorr": ["ResolverThetaCorr"],
+    "FluxPositionError": ["FluxPositionError", "ResolverCalibrationError"],
+    "ResolverThetaCorrection": ["ResolverThetaCorrection", "ResolverCalibrationCommand"],
+    "ResolverElectricalSpeed": ["ResolverElectricalSpeed"],
 }
 
 # Маппинг коробки передач (по DBC VcuActualGear)
@@ -125,6 +130,13 @@ class AppState:
         self.resolver_sine_amplitude_var = tk.StringVar(master=root, value="—")
         self.resolver_cosine_amplitude_var = tk.StringVar(master=root, value="—")
         self.resolver_gain_ratio_var = tk.StringVar(master=root, value="—")
+        self.resolver_flux_error_var = tk.StringVar(master=root, value="—")
+        self.resolver_theta_correction_var = tk.StringVar(master=root, value="—")
+        self.resolver_electrical_speed_var = tk.StringVar(master=root, value="—")
+        self.resolver_auto_state_var = tk.StringVar(master=root, value="idle")
+        self.resolver_auto_gain_var = tk.StringVar(master=root, value="0.20")
+        self.resolver_auto_tolerance_var = tk.StringVar(master=root, value="0.010")
+        self.resolver_auto_max_step_var = tk.StringVar(master=root, value="0.020")
         self.resolver_sine_min = None
         self.resolver_sine_max = None
         self.resolver_cosine_min = None
