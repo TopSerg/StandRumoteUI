@@ -13,7 +13,6 @@
 #include <iostream>
 #include <type_traits>
 #include <atomic>
-#include <algorithm>
 #include <cmath>
 
 // мои заголовки
@@ -122,8 +121,6 @@ static void apply_torque_fields(const json& j) {
     set_if_present(j, "En_Is", model.En_Is);
     set_if_present(j, "Isd",    model.Isd);
     set_if_present(j, "Isq",    model.Isq);
-    model.Isd = std::clamp(model.Isd, -10.0f, 10.0f);
-    model.Isq = std::clamp(model.Isq, -10.0f, 10.0f);
 }
 
 // Сериализация DataModel в JSON
