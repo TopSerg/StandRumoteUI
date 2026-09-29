@@ -31,7 +31,6 @@ TELEM_COLUMNS = [
 # Параметры для онлайн-расчётов Ld/Lq
 DEFAULT_RS_OHMS = 0.0087     # Provisional QS138 phase resistance used by firmware
 DEFAULT_POLE_PAIRS = 5       # QS138 commissioning profile
-COMMISSIONING_CURRENT_LIMIT_A = 1.0
 
 # Алиасы полей JSON на случай разных имён
 FIELD_ALIASES = {
