@@ -9,7 +9,6 @@ from state import (
     TELEM_COLUMNS,
     AppState,
     MOTOR_MODE_MAP,
-    COMMISSIONING_CURRENT_LIMIT_A,
 )
 
 
@@ -390,14 +389,6 @@ class Controllers:
             except Exception:
                 return
 
-            if (abs(isd) > COMMISSIONING_CURRENT_LIMIT_A or
-                    abs(isq) > COMMISSIONING_CURRENT_LIMIT_A):
-                self.ui_log(
-                    f"[SAFETY] Id/Iq are limited to ±{COMMISSIONING_CURRENT_LIMIT_A:.1f} A during commissioning",
-                    "ERR",
-                )
-                return
-
             ctrl = {
                 "cmd": "SendControl",
                 "En_Is": True,
@@ -558,13 +549,6 @@ class Controllers:
             Id = self._get_float(self.state.Id_var, "Id")
             Iq = self._get_float(self.state.Iq_var, "Iq")
         except Exception:
-            return
-
-        if abs(Id) > COMMISSIONING_CURRENT_LIMIT_A or abs(Iq) > COMMISSIONING_CURRENT_LIMIT_A:
-            self.ui_log(
-                f"[SAFETY] Id/Iq are limited to ±{COMMISSIONING_CURRENT_LIMIT_A:.1f} A during commissioning",
-                "ERR",
-            )
             return
 
         self.client.send_json_threadsafe({
