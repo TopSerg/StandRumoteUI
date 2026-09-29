@@ -321,7 +321,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     resolver_inner.bind("<Button-4>", _resolver_mousewheel)
     resolver_inner.bind("<Button-5>", _resolver_mousewheel)
 
-    resolver_content = ttk.Frame(resolver_content)
+    resolver_content = ttk.Frame(resolver_inner)
     resolver_content.pack(fill="both", expand=True, padx=18, pady=18)
 
     resolver_status = ttk.LabelFrame(resolver_content, text="Safe calibration mode")
