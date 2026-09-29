@@ -508,22 +508,20 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         handlers.get("set_mode", lambda *_: None)(val)
         _configure_main_slider(val)
 
-    ttk.Radiobutton(mode_frame, text="Torque (locked during commissioning)", value="torque",
-                    variable=state.mode_var, command=lambda: _on_mode_pick("torque"),
-                    state="disabled").grid(row=0, column=0, padx=8, pady=8, sticky="w")
+    ttk.Radiobutton(mode_frame, text="Torque (Ms)", value="torque",
+                    variable=state.mode_var, command=lambda: _on_mode_pick("torque")).grid(row=0, column=0, padx=8, pady=8, sticky="w")
     ttk.Radiobutton(mode_frame, text="Currents (Id/Iq)", value="currents",
                     variable=state.mode_var, command=lambda: _on_mode_pick("currents")).grid(row=0, column=1, padx=8, pady=8, sticky="w")
-    ttk.Radiobutton(mode_frame, text="Frequency (locked during commissioning)", value="speed",
-                    variable=state.mode_var, command=lambda: _on_mode_pick("speed"),
-                    state="disabled").grid(row=0, column=2, padx=8, pady=8, sticky="w")
+    ttk.Radiobutton(mode_frame, text="Frequency (ns)", value="speed",
+                    variable=state.mode_var, command=lambda: _on_mode_pick("speed")).grid(row=0, column=2, padx=8, pady=8, sticky="w")
     # Currents
     currents_frame = ttk.LabelFrame(main_inner, text="Currents")
     currents_frame.grid(row=1, column=1, padx=(0,10), pady=10, sticky="nsew")
     ttk.Label(currents_frame, text="Id [A]").grid(row=0, column=0, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Id_var, from_=-1.0, to=1.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Id_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
         .grid(row=0, column=1, sticky="w")
     ttk.Label(currents_frame, text="Iq [A]").grid(row=0, column=2, sticky="e", padx=6, pady=6)
-    _make_num_spin(currents_frame, state.Iq_var, from_=-1.0, to=1.0, step=0.1, width=10)\
+    _make_num_spin(currents_frame, state.Iq_var, from_=-1000.0, to=1000.0, step=0.1, width=10)\
         .grid(row=0, column=3, sticky="w")
 
     # Limits
