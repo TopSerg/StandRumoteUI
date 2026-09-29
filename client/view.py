@@ -270,10 +270,61 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     auto_frame = ttk.Frame(notebook); notebook.add(auto_frame, text="AutoCal")
 
     # === Resolver calibration: receive-only, no application CAN frames ===
-    resolver_inner = ttk.Frame(resolver_frame)
-    resolver_inner.pack(fill="both", expand=True, padx=18, pady=18)
+    # The resolver tab can be taller than the available window (especially with
+    # Windows display scaling), so keep its content in a vertically scrollable
+    # canvas instead of letting the lower calibration controls get clipped.
+    resolver_canvas = tk.Canvas(
+        resolver_frame,
+        highlightthickness=0,
+        borderwidth=0,
+        background=style.lookup("TFrame", "background") or root.cget("background"),
+    )
+    resolver_scrollbar = ttk.Scrollbar(
+        resolver_frame,
+        orient="vertical",
+        command=resolver_canvas.yview,
+    )
+    resolver_canvas.configure(yscrollcommand=resolver_scrollbar.set)
+    resolver_canvas.pack(side="left", fill="both", expand=True)
+    resolver_scrollbar.pack(side="right", fill="y")
 
-    resolver_status = ttk.LabelFrame(resolver_inner, text="Safe calibration mode")
+    resolver_inner = ttk.Frame(resolver_canvas)
+    resolver_window = resolver_canvas.create_window(
+        (0, 0),
+        window=resolver_inner,
+        anchor="nw",
+    )
+
+    def _sync_resolver_scrollregion(_event=None):
+        resolver_canvas.configure(scrollregion=resolver_canvas.bbox("all"))
+
+    def _fit_resolver_content(event):
+        # Keep the inner frame as wide as the visible canvas while preserving
+        # vertical scrolling for the content below the fold.
+        resolver_canvas.itemconfigure(resolver_window, width=event.width)
+
+    def _resolver_mousewheel(event):
+        if getattr(event, "delta", 0):
+            resolver_canvas.yview_scroll(int(-event.delta / 120), "units")
+        elif getattr(event, "num", None) == 4:
+            resolver_canvas.yview_scroll(-1, "units")
+        elif getattr(event, "num", None) == 5:
+            resolver_canvas.yview_scroll(1, "units")
+        return "break"
+
+    resolver_inner.bind("<Configure>", _sync_resolver_scrollregion)
+    resolver_canvas.bind("<Configure>", _fit_resolver_content)
+    resolver_canvas.bind("<MouseWheel>", _resolver_mousewheel)
+    resolver_inner.bind("<MouseWheel>", _resolver_mousewheel)
+    resolver_canvas.bind("<Button-4>", _resolver_mousewheel)
+    resolver_canvas.bind("<Button-5>", _resolver_mousewheel)
+    resolver_inner.bind("<Button-4>", _resolver_mousewheel)
+    resolver_inner.bind("<Button-5>", _resolver_mousewheel)
+
+    resolver_content = ttk.Frame(resolver_content)
+    resolver_content.pack(fill="both", expand=True, padx=18, pady=18)
+
+    resolver_status = ttk.LabelFrame(resolver_content, text="Safe calibration mode")
     resolver_status.pack(fill="x", pady=(0, 12))
     ttk.Label(resolver_status, textvariable=state.resolver_mode_var,
               font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
@@ -286,7 +337,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         justify="left",
     ).pack(anchor="w", padx=12, pady=(0, 10))
 
-    resolver_buttons = ttk.Frame(resolver_inner)
+    resolver_buttons = ttk.Frame(resolver_content)
     resolver_buttons.pack(fill="x", pady=(0, 12))
     ttk.Button(resolver_buttons, text="▶ Start RX-only (50 Hz)",
                command=handlers.get("start_resolver_calibration", lambda: None)).pack(side="left", padx=(0, 8))
@@ -295,7 +346,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     ttk.Button(resolver_buttons, text="Reset capture",
                command=handlers.get("reset_resolver_capture", lambda: None)).pack(side="left", padx=8)
 
-    resolver_values = ttk.LabelFrame(resolver_inner, text="Live resolver values")
+    resolver_values = ttk.LabelFrame(resolver_content, text="Live resolver values")
     resolver_values.pack(fill="x")
     resolver_fields = [
         ("Sine (raw ADC - 2048)", state.resolver_sine_var),
@@ -318,7 +369,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         justify="left",
     ).grid(row=len(resolver_fields), column=0, columnspan=2, sticky="w", padx=10, pady=(8, 12))
 
-    resolver_stats = ttk.LabelFrame(resolver_inner, text="Full-turn capture")
+    resolver_stats = ttk.LabelFrame(resolver_content, text="Full-turn capture")
     resolver_stats.pack(fill="x", pady=(12, 0))
     resolver_stat_fields = [
         ("Samples", state.resolver_capture_count_var),
@@ -336,7 +387,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
             row=grid_row, column=col + 1, sticky="w", padx=10, pady=7
         )
 
-    resolver_zero = ttk.LabelFrame(resolver_inner, text="Electrical zero calibration (normal CAN mode)")
+    resolver_zero = ttk.LabelFrame(resolver_content, text="Electrical zero calibration (normal CAN mode)")
     resolver_zero.pack(fill="x", pady=(12, 0))
     zero_fields = [
         ("Flux position error [rad]", state.resolver_flux_error_var),
