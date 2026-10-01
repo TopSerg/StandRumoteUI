@@ -11,7 +11,7 @@ set(PCAN_LIB_DIR "${CMAKE_SOURCE_DIR}/Stand_Marathon/lib/x64/VC_LIB")
 set(YOKO_LIB_DIR "${CMAKE_SOURCE_DIR}/Stand_Marathon/lib")
 
 # Зависимости через vcpkg
-find_package(Boost REQUIRED COMPONENTS system thread)
+
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # Подключаем CAN_DBC_MODULE (правильный относительный путь)
@@ -85,7 +85,6 @@ target_link_directories(MarathonWS PRIVATE ${YOKO_LIB_DIR})
 
 target_link_libraries(MarathonWS PRIVATE
     CAN_DBC_MODULE
-    Boost::system Boost::thread
     nlohmann_json::nlohmann_json
     PCANBasic
 )

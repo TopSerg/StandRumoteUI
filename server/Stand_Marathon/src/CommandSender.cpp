@@ -244,13 +244,17 @@ void CommandSender::sendSafeDisable(CANInterface& can, DataModel& data) {
     data.En_Is = false;
     data.Isd = 0.0f;
     data.Isq = 0.0f;
+    data.MotorCtrl = 0;  // VCU_MCURequestedStateReady: release PWM.
+    data.GearCtrl = 0;
+    data.M_desired = 0.0f;
     data.ResolverCalibrationCommandEnabled = false;
 
-    // Send several consecutive counters so the inverter receives an explicit
-    // disable before the CAN interface is closed.
+    // Repeat the Ready request, then send one disabled 0x300. Consecutive
+    // 0x300 frames within one MCU control tick can look like a counter jump.
     for (int i = 0; i < 3; ++i) {
-        sendTorqueCommand(can, data);
+        sendControlCommand(can, data);
     }
+    sendTorqueCommand(can, data);
     sendResolverCalibrationCommand(can, data, false);
 }
 

@@ -157,6 +157,9 @@ void StateMachine::handleInit() {
     data.En_Is = false;
     data.Isd = 0.0f;
     data.Isq = 0.0f;
+    data.MotorCtrl = 0;
+    data.GearCtrl = 0;
+    data.M_desired = 0.0f;
     data.ResolverCalibrationCommandEnabled = false;
     // инициализируем канал параметрами из DataModel (после загрузки INI)
     if (canInterface.init(data.canChannel, data.canBaud, data.canFlags)) { // корректнее, чем хардкод:contentReference[oaicite:1]{index=1}

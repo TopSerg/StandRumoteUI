@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <atomic>
+#include <fstream>
+#include <mutex>
 #include <windows.h>
 #include "PCANBasic.h"
 #include "canDBCtask.h"
@@ -41,6 +43,12 @@ private:
     TPCANHandle handle;
     bool initialized;
     std::atomic<bool> transmitEnabled{false};
+    std::ofstream traceFile;
+    std::mutex traceMutex;
+
+    void traceFrame(const char* direction, uint32_t id, uint8_t length,
+                    const uint8_t* data, uint64_t pcanTimestampUs,
+                    TPCANStatus status);
 
     std::string getErrorText(TPCANStatus error);
 };

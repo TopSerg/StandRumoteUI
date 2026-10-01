@@ -7,6 +7,9 @@
 /client/__pycache__/
 /server/__pycache__/
 /server/build/
+/server/build-*/
+/server/out/
+/server/.tools/
 /server/build/CMakeFiles/
 /server/build/MarathonWS.dir/
 /server/build/Stand_Marathon/

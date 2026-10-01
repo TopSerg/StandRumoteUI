@@ -3,6 +3,8 @@
 #include <iostream>
 
 #include <cstdio>
+#include <chrono>
+#include <iomanip>
 #include <string>
 
 static inline bool WS_CAN_LOG() {
@@ -26,7 +28,42 @@ static inline std::string to_hex(const uint8_t* data, int len) {
     return s;
 }
 
-CANInterface::CANInterface() : handle(PCAN_NONEBUS), initialized(false) {}
+CANInterface::CANInterface() : handle(PCAN_NONEBUS), initialized(false) {
+    const char* path = std::getenv("WS_CAN_TRACE_FILE");
+    if (path && *path) {
+        traceFile.open(path, std::ios::out | std::ios::app);
+        if (!traceFile) {
+            std::cerr << "Cannot open CAN trace file: " << path << std::endl;
+        } else {
+            if (traceFile.tellp() == 0) {
+                traceFile << "epoch_us;pcan_us;direction;id;dlc;data;status\n";
+            }
+            std::cout << "CAN trace: " << path << std::endl;
+        }
+    }
+}
+
+void CANInterface::traceFrame(const char* direction, uint32_t id, uint8_t length,
+                              const uint8_t* data, uint64_t pcanTimestampUs,
+                              TPCANStatus status) {
+    if (!traceFile || (id != 0x07A && id != 0x07D && id != 0x07E &&
+                       id != 0x081 && id != 0x082 && id != 0x2C5 &&
+                       id != 0x2C6 && id != 0x300 && id != 0x301 && id != 0x046 &&
+                       id != 0x047)) return;
+    const auto epochUs = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    std::lock_guard<std::mutex> lock(traceMutex);
+    traceFile << epochUs << ';' << pcanTimestampUs << ';' << direction << ";0x"
+              << std::uppercase << std::hex << std::setw(3) << std::setfill('0')
+              << id << std::dec << ';' << unsigned(length) << ';';
+    for (uint8_t i = 0; i < length; ++i) {
+        if (i) traceFile << ' ';
+        traceFile << std::uppercase << std::hex << std::setw(2)
+                  << std::setfill('0') << unsigned(data[i]);
+    }
+    traceFile << ";0x" << std::hex << unsigned(status) << std::dec << '\n';
+    traceFile.flush();
+}
 
 CANInterface::~CANInterface() {
     stop();
@@ -128,6 +165,7 @@ bool CANInterface::send(uint32_t id, const uint8_t* data, uint8_t length) {
     }
     
     TPCANStatus status = CAN_Write(handle, &msg);
+    traceFrame("TX", id, length, data, 0, status);
     if (status != PCAN_ERROR_OK) {
         if (WS_CAN_LOG()) std::printf("[CAN TX][ERR] status=0x%08X\n", (unsigned)status);
         return false;
@@ -157,6 +195,10 @@ bool CANInterface::receive(CANMessage& msg) {
     msg.length = pcanMsg.LEN;
     std::copy(pcanMsg.DATA, pcanMsg.DATA + msg.length, msg.data);
     msg.timestamp = ts.micros + 1000 * ts.millis + 1000000 * ts.millis_overflow;
+    const uint64_t pcanTimestampUs = uint64_t(ts.micros) +
+        1000ULL * uint64_t(ts.millis) +
+        4294967296000ULL * uint64_t(ts.millis_overflow);
+    traceFrame("RX", msg.id, msg.length, msg.data, pcanTimestampUs, status);
 
     return true;
 }
