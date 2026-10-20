@@ -465,8 +465,11 @@ void DbcSignalCache::buildDefaultSelection()
 
     selectRx("MCU_ActualTorque", [](DataModel& d, double v) { d.Ms = static_cast<float>(v); });
     selectRx("MCU_UdcCurr", [](DataModel& d, double v) { d.Udc = static_cast<float>(v); });
-    selectRx("MCU_IsCurr", [](DataModel& d, double v) { d.Idc = static_cast<float>(v); });
-    selectRx("MCU_ActualSpeed", [](DataModel& d, double v) { d.ns = static_cast<float>(v); });
+    selectRx("MCU_IsCurr", [](DataModel& d, double v) { d.Is = static_cast<float>(v); });
+    selectRx("MCU_ActualSpeed", [](DataModel& d, double v) {
+        d.Wmechanical = static_cast<float>(v);
+        d.ns = d.Wmechanical * (60.0f / 6.2831853071795864769f);
+    });
     selectRx("MCU_IGBTTempU", [](DataModel& d, double v) { d.MCU_IGBTTempU = static_cast<float>(v); });
     selectRx("MCU_IGBTTempV", [](DataModel& d, double v) { d.MCU_IGBTTempV = static_cast<float>(v); });
     selectRx("MCU_IGBTTempW", [](DataModel& d, double v) { d.MCU_IGBTTempW = static_cast<float>(v); });

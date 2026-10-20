@@ -395,7 +395,7 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
         ("Electrical speed [rad/s]", state.resolver_electrical_speed_var),
         ("Status", state.resolver_calibration_status_var),
         ("Ack sequence", state.resolver_ack_sequence_var),
-        ("CAN command faults", state.can_fault_var),
+        ("Faults / limits", state.can_fault_var),
     ]
     for row, (label, var) in enumerate(zero_fields):
         col = 0 if row < 3 else 2
@@ -537,12 +537,12 @@ def build_ui(root, state: State, handlers) -> ViewRefs:
     params_frame.grid(row=2, column=1, columnspan=2, padx=(0,10), pady=0, sticky="nsew")
     state.entry_vars = getattr(state, "entry_vars", {}) or {}
     monitor_params = [
-        "Speed rotation",
+        "Speed rotation [rpm]",
         "Torque (Ms)",
         "DC voltage (Udc)",
-        "direct current (Idc)",
-        "Stator current d (Isd)",
-        "Stator current q (Isq)",
+        "Stator current |Is| [A]",
+        "Command Id [A]",
+        "Command Iq [A]",
         "IGBT temperature U",
         "IGBT temperature V",
         "IGBT temperature W",

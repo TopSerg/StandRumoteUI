@@ -47,10 +47,10 @@ struct DataModel {
 
     // === Реальные значения ===
     float Ms = 0.0f;               // Момент
-    float ns = 0.0f;               // Скорость
-    float Idc = 0.0f;              // Ток DC
-    float Isd = 0.0f;              // d-компонента
-    float Isq = 0.0f;              // q-компонента
+    float ns = 0.0f;               // Mechanical speed [rpm] for the UI and host limit
+    float Is = 0.0f;               // Stator current magnitude [A], not DC current
+    float Isd = 0.0f;              // Commanded d-axis current [A]
+    float Isq = 0.0f;              // Commanded q-axis current [A]
     float Udc = 0.0f;              // Напряжение DC
     float Pe_dc = 0.0f;            // Мощность DC
 
@@ -116,6 +116,15 @@ struct DataModel {
 
     // === Current-command CAN diagnostics (CAN 0x2C6) ===
     uint8_t McuCANFault = 0;
+    uint8_t McuFailCode = 0;
+    uint32_t McuSoftwareFault = 0;
+    uint16_t McuHardwareFault = 0;
+    uint8_t McuSensorFault = 0;
+    bool DeratingOverVoltage = false;
+    bool DeratingUnderVoltage = false;
+    bool DeratingDischargeCurrent = false;
+    bool DeratingChargeCurrent = false;
+    bool DeratingSpeed = false;
     bool CurrentCommandTimeoutFault = false;
     bool CurrentCommandCounterFault = false;
 
@@ -125,7 +134,7 @@ struct DataModel {
     float Iq = 0;
 
     // --- MCU_Status (BO_ 125) ---
-    float   MCU_OfsAl        = 0.0f;  // [deg] scale 0.0878906
+    float   MCU_OfsAl        = 0.0f;  // Legacy unsigned DBC field; not a signed DC-current measurement
     float   MCU_Isd          = 0.0f;  // [A]   scale 0.5,  offset -1023.5
     float   MCU_Isq          = 0.0f;  // [A]   scale 0.5,  offset -1023.5
     uint8_t MCU_bDmpCActv    = 0;     // flag

@@ -93,6 +93,7 @@ class Telemetry:
                 "ns",
                 "Ms",
                 "Idc",
+                "Is",
                 "Isd",
                 "Ud",
                 "Uq",
@@ -265,12 +266,15 @@ class Telemetry:
         Uq = self._as_float(self._get_alias(d, "Uq"))
         Id = self._as_float(self._get_alias(d, "Id"))
         Iq = self._as_float(self._get_alias(d, "Iq"))
-        Idc = self._as_float(d.get("Idc"))
+        Is = self._as_float(d.get("Is", d.get("Idc")))
         Isd = self._as_float(d.get("Isd"))
         Isq = self._as_float(d.get("Isq"))
         Udc = self._as_float(d.get("Udc"))
         Ms = self._as_float(d.get("Ms"))
         ns = self._as_float(d.get("ns"))
+        if ns is not None and d.get("speed_unit") != "rpm":
+            # Older stand servers forwarded the inverter's rad/s as ns.
+            ns *= 60.0 / (2.0 * math.pi)
         m_grad_max = self._as_float(d.get("M_grad_max"))
         n_max = self._as_float(d.get("n_max"))
 
@@ -306,6 +310,17 @@ class Telemetry:
         ResolverCalibrationStatus = self._as_float(d.get("ResolverCalibrationStatus"))
         ResolverCalibrationAckSequence = self._as_float(d.get("ResolverCalibrationAckSequence"))
         McuCANFault = self._as_float(d.get("McuCANFault"))
+        McuFailCode = self._as_float(d.get("McuFailCode"))
+        McuSoftwareFault = self._as_float(d.get("McuSoftwareFault"))
+        McuHardwareFault = self._as_float(d.get("McuHardwareFault"))
+        McuSensorFault = self._as_float(d.get("McuSensorFault"))
+        derating_keys = (
+            "DeratingOverVoltage", "DeratingUnderVoltage",
+            "DeratingDischargeCurrent", "DeratingChargeCurrent", "DeratingSpeed",
+        )
+        flux_error_valid = bool(d.get("ResolverSpeedValid")) and bool(
+            d.get("ResolverSignalsReady")
+        ) and mcu_gate == 2
         can_mode = str(d.get("can_mode", ""))
 
         def set_resolver_var(name: str, value, digits: int = 3):
@@ -322,7 +337,7 @@ class Telemetry:
         set_resolver_var("resolver_amplitude_var", ResolverAmplitude)
         set_resolver_var("resolver_theta_var", ResolverTheta, 4)
         set_resolver_var("resolver_theta_corr_var", ResolverThetaCorr, 4)
-        set_resolver_var("resolver_flux_error_var", ResolverFluxPositionError, 4)
+        set_resolver_var("resolver_flux_error_var", ResolverFluxPositionError if flux_error_valid else None, 4)
         set_resolver_var("resolver_applied_correction_var", ResolverAppliedCorrection, 4)
         set_resolver_var("resolver_electrical_speed_var", ResolverElectricalSpeed, 1)
         if ResolverCalibrationAckSequence is not None:
@@ -331,9 +346,11 @@ class Telemetry:
         if d.get("ResolverSignalsReady"):
             status_parts.append("signals ready")
         if d.get("ResolverSpeedValid"):
-            status_parts.append("speed valid")
+            status_parts.append("speed >573 rpm")
         if d.get("ResolverCorrectionActive"):
             status_parts.append("correction active")
+        if mcu_gate != 2:
+            status_parts.append("PWM off: flux error invalid")
         self.state.resolver_calibration_status_var.set(
             ", ".join(status_parts) if status_parts else "not ready"
         )
@@ -342,6 +359,25 @@ class Telemetry:
             fault_parts.append("0x300 timeout")
         if d.get("CurrentCommandCounterFault"):
             fault_parts.append("counter")
+        if McuFailCode:
+            fault_parts.append(f"fault level {int(McuFailCode)}")
+        if McuSoftwareFault is not None:
+            software = int(McuSoftwareFault)
+            if software & 0x02:
+                fault_parts.append("OverCurrent")
+            if software & 0x04:
+                fault_parts.append("OverVoltage")
+            if software & ~0x06:
+                fault_parts.append(f"software 0x{software:X}")
+        if McuHardwareFault:
+            fault_parts.append(f"hardware 0x{int(McuHardwareFault):X}")
+        if McuSensorFault:
+            fault_parts.append(f"sensor 0x{int(McuSensorFault):X}")
+        if d.get("HostOverspeed"):
+            fault_parts.append("host overspeed")
+        for key in derating_keys:
+            if d.get(key):
+                fault_parts.append(key.removeprefix("Derating"))
         self.state.can_fault_var.set(", ".join(fault_parts) if fault_parts else "OK")
         if can_mode:
             self.state.resolver_mode_var.set(
@@ -388,6 +424,8 @@ class Telemetry:
 
         We = self._as_float(self._get_alias(d, "Welectrical"))
         Wm = self._as_float(self._get_alias(d, "Wmechanical"))
+        if Wm is None and ns is not None:
+            Wm = ns * (2.0 * math.pi / 60.0)
         Rs = self._as_float(self._get_alias(d, "Rs"), DEFAULT_RS_OHMS)
         pp = self._as_float(self._get_alias(d, "polePairs"), DEFAULT_POLE_PAIRS)
 
@@ -424,12 +462,12 @@ class Telemetry:
             put("Uq", Uq)
             put("Id", Id)
             put("Iq", Iq)
-            put("direct current (Idc)", Idc)
-            put("Stator current d (Isd)", Isd)
-            put("Stator current q (Isq)", Isq)
+            put("Stator current |Is| [A]", Is)
+            put("Command Id [A]", Isd)
+            put("Command Iq [A]", Isq)
             put("DC voltage (Udc)", Udc)
             put("Torque (Ms)", Ms)
-            put("Speed rotation", ns)
+            put("Speed rotation [rpm]", ns)
             put("Flux", Flux)
             put("Theta", Theta)
             put("Temperature", Temperature)
@@ -448,9 +486,10 @@ class Telemetry:
         row = {
             "ts": datetime.now().strftime("%H:%M:%S.%f")[:-3],
             "ns": ns,
+            "Wmechanical": Wm,
             "Ms": Ms,
             "Udc": Udc,
-            "Idc": Idc,
+            "Is": Is,
             "Isd": Isd,
             "Isq": Isq,
             "Ud": Ud,
@@ -494,8 +533,16 @@ class Telemetry:
             "ResolverCalibrationStatus": ResolverCalibrationStatus,
             "ResolverCalibrationAckSequence": ResolverCalibrationAckSequence,
             "McuCANFault": McuCANFault,
+            "McuFailCode": McuFailCode,
+            "McuSoftwareFault": McuSoftwareFault,
+            "McuHardwareFault": McuHardwareFault,
+            "McuSensorFault": McuSensorFault,
+            "ResolverFluxErrorValid": int(flux_error_valid),
+            "HostOverspeed": int(bool(d.get("HostOverspeed"))),
             "CanMode": can_mode,
         }
+        for key in derating_keys:
+            row[key] = int(bool(d.get(key)))
         for sample in getattr(self.state, "latest_dbc_signals", []) or []:
             if not isinstance(sample, dict):
                 continue
@@ -711,11 +758,11 @@ class Telemetry:
                         xs = xs_all[-n:]
                         lines[1].set_data(xs, list(self.state.trend_Ms))
 
-                    # Idc / Isd
-                    if self.state.trend_Idc:
-                        n = len(self.state.trend_Idc)
+                    # Stator-current magnitude / Isd
+                    if self.state.trend_Is:
+                        n = len(self.state.trend_Is)
                         xs = xs_all[-n:]
-                        lines[2].set_data(xs, list(self.state.trend_Idc))
+                        lines[2].set_data(xs, list(self.state.trend_Is))
                     if self.state.trend_Isd:
                         n = len(self.state.trend_Isd)
                         xs = xs_all[-n:]

@@ -11,8 +11,8 @@ PAD = 8
 # Порядок колонок логбука (как в исходном коде)
 TELEM_COLUMNS = [
     "ts",
-    "ns", "Ms",
-    "Udc", "Idc", "Isd", "Isq",
+    "ns", "Wmechanical", "Ms",
+    "Udc", "Is", "Isd", "Isq",
     "Ud", "Uq", "Id", "Iq",
     "Flux", "Theta", "Temperature", "StatorTemperature",
     "Rs", "TimeStamp", "ThetaCorr",
@@ -25,7 +25,11 @@ TELEM_COLUMNS = [
     "ResolverTheta", "ResolverThetaCorr", "ResolverFluxPositionError",
     "ResolverAppliedCorrection", "ResolverElectricalSpeed",
     "ResolverCalibrationStatus", "ResolverCalibrationAckSequence",
-    "McuCANFault", "CanMode",
+    "McuCANFault", "McuFailCode", "McuSoftwareFault",
+    "McuHardwareFault", "McuSensorFault",
+    "DeratingOverVoltage", "DeratingUnderVoltage",
+    "DeratingDischargeCurrent", "DeratingChargeCurrent",
+    "DeratingSpeed", "HostOverspeed", "ResolverFluxErrorValid", "CanMode",
 ]
 
 # Параметры для онлайн-расчётов Ld/Lq
@@ -144,7 +148,7 @@ class AppState:
         self.trend_ts = deque(maxlen=TREND_CAP)    # datetime для оси X
         self.trend_ns = deque(maxlen=TREND_CAP)
         self.trend_Ms = deque(maxlen=TREND_CAP)
-        self.trend_Idc = deque(maxlen=TREND_CAP)
+        self.trend_Is = deque(maxlen=TREND_CAP)
         self.trend_Isd = deque(maxlen=TREND_CAP)
         self.trend_Ud = deque(maxlen=TREND_CAP)
         self.trend_Uq = deque(maxlen=TREND_CAP)

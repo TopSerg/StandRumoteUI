@@ -9,6 +9,7 @@
 namespace {
 
 constexpr bool kLogDbcSelectedSignals = false;
+constexpr float kRadPerSecondToRpm = 60.0f / 6.2831853071795864769f;
 
 }
 
@@ -79,11 +80,13 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
 
             data.Ms = actualTorque;
             data.Udc = udcCurr;
-            data.Idc = isCurr;
-            data.ns = actualSpeed;
+            data.Is = isCurr;
+            data.Wmechanical = static_cast<float>(actualSpeed);
+            data.ns = data.Wmechanical * kRadPerSecondToRpm;
 
-            std::cout << "[RX] Ms=" << data.Ms << " Ns=" << data.ns
-                      << " Udc=" << data.Udc << " Idc=" << data.Idc << std::endl;
+            std::cout << "[RX] Ms=" << data.Ms << " speed=" << data.ns
+                      << " rpm Udc=" << data.Udc
+                      << " Is=" << data.Is << std::endl;
             break;
         }
 
@@ -109,6 +112,11 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         }
 
         case 0x2c5: { // MCU_DeratingStatus (BO_ 709)
+            data.DeratingDischargeCurrent = UnpackSignalFromBytes(msg.data, 6, 1) != 0;
+            data.DeratingOverVoltage = UnpackSignalFromBytes(msg.data, 5, 1) != 0;
+            data.DeratingChargeCurrent = UnpackSignalFromBytes(msg.data, 1, 1) != 0;
+            data.DeratingUnderVoltage = UnpackSignalFromBytes(msg.data, 0, 1) != 0;
+            data.DeratingSpeed = UnpackSignalFromBytes(msg.data, 12, 1) != 0;
             data.M_max = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 11, 11)) - 1024;
             data.M_min = static_cast<int32_t>(UnpackSignalFromBytes(msg.data, 16, 11)) - 1024;
             // M_grad_max не существует в DBC, пропускаем
@@ -119,12 +127,18 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
         }
 
         case 0x2c6: { // MCU_FailureCode (BO_ 710)
-            uint8_t failCode = UnpackSignalFromBytes(msg.data, 7, 3);
+            data.McuFailCode = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 7, 3));
+            data.McuSoftwareFault = UnpackSignalFromBytes(msg.data, 15, 19);
+            data.McuHardwareFault = static_cast<uint16_t>(UnpackSignalFromBytes(msg.data, 39, 16));
+            data.McuSensorFault = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 55, 8));
             data.McuCANFault = static_cast<uint8_t>(UnpackSignalFromBytes(msg.data, 63, 8));
             data.CurrentCommandTimeoutFault = (data.McuCANFault & 0x01U) != 0U;
             data.CurrentCommandCounterFault = (data.McuCANFault & 0x02U) != 0U;
-            std::cout << "[RX] Error Level (MCU_FailCode1): " << (int)failCode
-                      << " CANFault=0x" << std::hex << (int)data.McuCANFault << std::dec
+            std::cout << "[RX] Fault level=" << (int)data.McuFailCode
+                      << " software=0x" << std::hex << data.McuSoftwareFault
+                      << " hardware=0x" << data.McuHardwareFault
+                      << " sensor=0x" << (int)data.McuSensorFault
+                      << " CAN=0x" << (int)data.McuCANFault << std::dec
                       << std::endl;
             break;
         }
@@ -277,6 +291,9 @@ void MarathonLogic::updateFromCAN(const CANMessage& msg, DataModel& data) {
 
 
         default:
+            // The temporary QS138 controller snapshot is decoded from the raw
+            // CAN trace after the run; printing 950 frames/s would delay RX.
+            if (msg.id >= 0x5D0 && msg.id <= 0x5E2) break;
             std::cout << "[RX] Unknown ID: 0x" << std::hex << msg.id << std::dec << std::endl;
             break;
     }

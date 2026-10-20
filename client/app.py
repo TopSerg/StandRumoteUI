@@ -22,6 +22,7 @@ def main():
 
     # --- Состояние приложения (все tk.Variable, буферы и пр.) ---
     state = AppState(root)
+    state.ws_addr_var = tk.StringVar(master=root, value=DEFAULT_WS_ADDR)
 
     # --- Стиль/тема (точно как было в gui_ws.py) ---
     init_style(root, dark=False)\

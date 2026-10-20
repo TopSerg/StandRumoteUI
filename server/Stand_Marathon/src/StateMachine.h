@@ -17,6 +17,7 @@ public:
     void setState(State newState);
     void update(); // вызывать часто (каждые 1–5 мс)
     bool isRxOnly() const;
+    bool isOverSpeedActive() const;
     const char* stateName() const;
 
 private:
@@ -25,7 +26,7 @@ private:
     ConfigManager& config;
     std::atomic<State> currentState{State::Idle};
 
-    bool isOverSpeed = false;
+    std::atomic<bool> isOverSpeed{false};
 
     using clock = std::chrono::steady_clock;
     clock::time_point t0_ = clock::now();

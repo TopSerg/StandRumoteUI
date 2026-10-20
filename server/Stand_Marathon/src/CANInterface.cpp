@@ -49,7 +49,7 @@ void CANInterface::traceFrame(const char* direction, uint32_t id, uint8_t length
     if (!traceFile || (id != 0x07A && id != 0x07D && id != 0x07E &&
                        id != 0x081 && id != 0x082 && id != 0x2C5 &&
                        id != 0x2C6 && id != 0x300 && id != 0x301 && id != 0x046 &&
-                       id != 0x047)) return;
+                       id != 0x047 && (id < 0x5D0 || id > 0x5E2))) return;
     const auto epochUs = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     std::lock_guard<std::mutex> lock(traceMutex);

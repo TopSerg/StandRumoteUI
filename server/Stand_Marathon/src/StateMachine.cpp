@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <cmath>
 
 StateMachine::StateMachine(DataModel& model, CANInterface& can, ConfigManager& cfg)
     : data(model), canInterface(can), config(cfg) {}
@@ -26,6 +27,10 @@ void StateMachine::setState(State newState) {
 bool StateMachine::isRxOnly() const {
     const State state = currentState.load();
     return state == State::ResolverRxInit || state == State::ResolverRx;
+}
+
+bool StateMachine::isOverSpeedActive() const {
+    return isOverSpeed.load();
 }
 
 const char* StateMachine::stateName() const {
@@ -90,11 +95,7 @@ void StateMachine::periodicTx() {
 }
 
 void StateMachine::update() {
-    // СНАЧАЛА — периодические отправки
-    if (currentState.load() == State::Read2){
-        periodicTx();
-    }
-
+    // Receive telemetry and apply limits before the next scheduled CAN command.
     if (std::getenv("WS_LOG_CAN")){
         std::cout << "En_is: " << data.En_Is << "   En_rem: " << data.En_rem << "   Kl_15: " << data.Kl_15 << std::endl;
     }
@@ -111,19 +112,28 @@ void StateMachine::update() {
         case State::Read_Cfg: handleReadCfg(); break;
     }
 
-    if(data.ns > data.n_max){
-        isOverSpeed = true;
-    }
-
-    if (isOverSpeed)
-    {
-        data.M_desired = 0;
-        data.Isd = 0;
-        data.Isq = 0;
-    }
-
-    if(data.ns == 0){
-        isOverSpeed = false;
+    if (currentState.load() == State::Read2) {
+        // data.ns is signed rpm; the inverter's raw rad/s was converted on RX.
+        constexpr float kFirmwareSpeedLimitRpm = 3000.0f;
+        const float limit = data.n_max < kFirmwareSpeedLimitRpm
+            ? data.n_max : kFirmwareSpeedLimitRpm;
+        const float speed = std::fabs(data.ns);
+        if (!std::isfinite(data.n_max) || limit <= 0.0f || speed > limit) {
+            if (!isOverSpeed) {
+                std::cerr << "[LIMIT] Overspeed: " << data.ns
+                          << " rpm, limit " << limit << " rpm\n";
+            }
+            isOverSpeed = true;
+        } else if (isOverSpeed && speed < 0.9f * limit) {
+            isOverSpeed = false;
+        }
+        if (isOverSpeed) {
+            // Erase the request so it cannot return unexpectedly after release.
+            data.M_desired = 0.0f;
+            data.Isd = 0.0f;
+            data.Isq = 0.0f;
+        }
+        periodicTx();
     }
     
 }
@@ -154,6 +164,7 @@ void StateMachine::handleIdle() {
 void StateMachine::handleInit() {
     std::cout << "[STATE] Init\n";
     canInterface.stop();
+    isOverSpeed = false;
     data.En_Is = false;
     data.Isd = 0.0f;
     data.Isq = 0.0f;

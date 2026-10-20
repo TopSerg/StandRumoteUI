@@ -50,6 +50,7 @@ inline void set_if_present(const json& j, const char* key, T& target) {
 
 static bool         g_log_can   = false;
 static std::mutex   g_log_mutex;
+static std::mutex   g_model_mutex;
 static std::ofstream g_log_file;
 static std::atomic<int> g_json_period_ms{500};
 
@@ -128,7 +129,9 @@ std::string serializeData() {
     json j;
     j["Ms"] = model.Ms;
     j["ns"] = model.ns;
-    j["Idc"] = model.Idc;
+    j["speed_unit"] = "rpm";
+    j["Wmechanical"] = model.Wmechanical;
+    j["Is"] = model.Is;
     j["Isd"] = model.Isd;
     j["Isq"] = model.Isq;
     j["Udc"] = model.Udc;
@@ -191,6 +194,16 @@ std::string serializeData() {
     j["ResolverCorrectionActive"] = model.ResolverCorrectionActive;
     j["ResolverSignalsReady"] = model.ResolverSignalsReady;
     j["McuCANFault"] = model.McuCANFault;
+    j["McuFailCode"] = model.McuFailCode;
+    j["McuSoftwareFault"] = model.McuSoftwareFault;
+    j["McuHardwareFault"] = model.McuHardwareFault;
+    j["McuSensorFault"] = model.McuSensorFault;
+    j["DeratingOverVoltage"] = model.DeratingOverVoltage;
+    j["DeratingUnderVoltage"] = model.DeratingUnderVoltage;
+    j["DeratingDischargeCurrent"] = model.DeratingDischargeCurrent;
+    j["DeratingChargeCurrent"] = model.DeratingChargeCurrent;
+    j["DeratingSpeed"] = model.DeratingSpeed;
+    j["HostOverspeed"] = sm.isOverSpeedActive();
     j["CurrentCommandTimeoutFault"] = model.CurrentCommandTimeoutFault;
     j["CurrentCommandCounterFault"] = model.CurrentCommandCounterFault;
     j["can_mode"] = sm.stateName();
@@ -395,15 +408,37 @@ void do_session(tcp::socket socket) {
             ws->write(boost::asio::buffer(payload));
         }
 
+        // Keep CAN command scheduling independent of a potentially blocking
+        // WebSocket write. A 200 ms socket stall otherwise exceeds the MCU's
+        // 100 ms current-command timeout even while CAN reception continues.
+        std::thread can_updater([&running]() {
+            while (running) {
+                try {
+                    {
+                        std::lock_guard<std::mutex> modelLock(g_model_mutex);
+                        sm.update();
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                } catch (const std::exception& e) {
+                    std::cerr << "[CAN updater error] " << e.what() << std::endl;
+                    running = false;
+                    break;
+                }
+            }
+        });
+
         std::thread updater([ws, ws_write_mutex, &running]() {
             auto last_json_send = clock1::now();
             while (running) {
                 try {
-                    sm.update();
                     const auto now1 = clock1::now();
                     const auto period = std::chrono::milliseconds(g_json_period_ms.load());
                     if(now1 - last_json_send >= period){
-                        std::string data = serializeData();
+                        std::string data;
+                        {
+                            std::lock_guard<std::mutex> modelLock(g_model_mutex);
+                            data = serializeData();
+                        }
                         log_ws_tx(data);
                         std::lock_guard<std::mutex> writeLock(*ws_write_mutex);
                         ws->write(boost::asio::buffer(data));
@@ -433,7 +468,10 @@ void do_session(tcp::socket socket) {
                 const json jei = j;
 
                 std::vector<json> responses;
-                handleCommand(j, responses);
+                {
+                    std::lock_guard<std::mutex> modelLock(g_model_mutex);
+                    handleCommand(j, responses);
+                }
                 for (const json& response : responses) {
                     const std::string payload = response.dump();
                     std::lock_guard<std::mutex> writeLock(*ws_write_mutex);
@@ -447,6 +485,7 @@ void do_session(tcp::socket socket) {
         }
 
         running = false;
+        if (can_updater.joinable()) can_updater.join();
         if (updater.joinable()) updater.join();
         sm.setState(State::Stop);
         sm.update();
